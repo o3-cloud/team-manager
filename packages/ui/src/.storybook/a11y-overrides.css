@@ -1,0 +1,66 @@
+/*
+ * Storybook-only WCAG 2 AA accessibility overrides for daisyUI light theme.
+ *
+ * Problem: several daisyUI default light-theme colors do not meet the WCAG 2 AA
+ * minimum contrast ratio of 4.5:1 when used as text on a white (#ffffff) background:
+ *   --color-error    (#ff627d)  → 2.87:1   (text-error in form validation messages)
+ *   --color-secondary (#f43098)  → 3.66:1  (link-secondary, chat-bubble-secondary)
+ *   --color-accent    (#00d3bb)  → 1.90:1  (link-accent)
+ *   --color-success   (#00d390)  → 1.95:1  (link-success)
+ *   --color-warning   (#fcb700)  → 1.76:1  (link-warning)
+ *   --color-info      (#00bafe)  → 2.22:1  (link-info)
+ *
+ * Additionally, daisyUI inactive tab text uses opacity: 50% of base-content which
+ * renders as ~#8b8b8d at 3.4:1 on white — below the WCAG AA threshold.
+ *
+ * Fix: override the problematic CSS variables and tab colour here in this
+ * Storybook-only file (imported after src/index.css in preview.ts). Because
+ * daisyUI's rules live in CSS @layer blocks, un-layered declarations here take
+ * precedence regardless of source order.
+ *
+ * Contrast targets (on white #ffffff, WCAG 2 AA ≥ 4.5:1):
+ *   --color-error:     #c0002e  → ~5.2:1
+ *   --color-secondary: #9d0060  → ~7.7:1
+ *   --color-accent:    #006354  → ~6.9:1
+ *   --color-success:   #007a43  → ~5.5:1
+ *   --color-warning:   #854d0e  → ~6.9:1
+ *   --color-info:      #006ba6  → ~5.4:1
+ *   inactive tab:  color-mix(…base-content 70%…) → ~5.8:1
+ */
+
+/* Override daisyUI light-theme colour variables with accessible equivalents */
+:root {
+  /* Error: dark crimson replaces the default salmon-pink */
+  --color-error: #c0002e;
+  --color-error-content: #fff5f7;
+
+  /* Secondary: dark magenta replaces the default vivid pink */
+  --color-secondary: #9d0060;
+  --color-secondary-content: #ffe8f5;
+
+  /* Accent: dark teal replaces the default light teal */
+  --color-accent: #006354;
+  --color-accent-content: #e8fff8;
+
+  /* Success: dark green replaces the default light green */
+  --color-success: #007a43;
+  --color-success-content: #e8fff0;
+
+  /* Warning: dark amber replaces the default light yellow */
+  --color-warning: #854d0e;
+  --color-warning-content: #fff8e8;
+
+  /* Info: dark blue replaces the default light blue */
+  --color-info: #006ba6;
+  --color-info-content: #e8f8ff;
+}
+
+/*
+ * Inactive tabs: daisyUI renders inactive tab text at 50% opacity of
+ * --color-base-content, which produces ~3.4:1 on white. Increase to 70%
+ * to achieve ~5.8:1 (WCAG 2 AA compliant). This un-layered rule wins over
+ * the daisyUI @layer rule.
+ */
+.tab:not(.tab-active, [aria-selected="true"], [aria-current="true"], [aria-current="page"]) {
+  color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "matchPackagePatterns": ["^@nestjs/"],
+      "groupName": "NestJS packages"
+    },
+    {
+      "matchPackagePatterns": ["^@opentelemetry/"],
+      "groupName": "OpenTelemetry packages"
+    }
+  ],
+  "pinVersions": true,
+  "rangeStrategy": "pin",
+  "commitMessagePrefix": "chore(deps):"
+}

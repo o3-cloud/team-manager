@@ -1,0 +1,78 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: team-manager
+
+build:
+  local:
+    push: false
+    useDockerCLI: true
+  artifacts:
+    - image: team-manager-backend
+      context: .
+      docker:
+        dockerfile: apps/backend/Dockerfile
+      sync:
+        manual:
+          - src: "apps/backend/src/**/*.ts"
+            dest: /app/apps/backend/src
+    - image: team-manager-frontend
+      context: .
+      docker:
+        dockerfile: apps/frontend/Dockerfile
+        target: runner
+      # For `skaffold dev` hot-reload, use the `dev` profile below which
+      # switches to the Vite dev server (port 5173) and updates the Service.
+
+profiles:
+  - name: dev
+    build:
+      artifacts:
+        - image: team-manager-frontend
+          context: .
+          docker:
+            dockerfile: apps/frontend/Dockerfile
+            target: dev
+          sync:
+            manual:
+              - src: "apps/frontend/src/**"
+                dest: /app/apps/frontend/src
+              - src: apps/frontend/index.html
+                dest: /app/apps/frontend
+    portForward:
+      - resourceType: pod
+        resourceName: frontend
+        namespace: team-manager
+        port: 5173
+        localPort: 5173
+
+manifests:
+  rawYaml:
+    - k8s/namespace.yaml
+    - k8s/secrets.yaml
+    - k8s/postgres-statefulset.yaml
+    - k8s/openobserve.yaml
+    - k8s/backend-deployment.yaml
+    - k8s/frontend-deployment.yaml
+
+deploy:
+  kubectl:
+    defaultNamespace: team-manager
+  kubeContext: docker-desktop
+
+portForward:
+  - resourceType: service
+    resourceName: frontend
+    namespace: team-manager
+    port: 80
+    localPort: 5173
+  - resourceType: service
+    resourceName: backend
+    namespace: team-manager
+    port: 3000
+    localPort: 3000
+  - resourceType: service
+    resourceName: openobserve
+    namespace: team-manager
+    port: 5080
+    localPort: 5080

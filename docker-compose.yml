@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:18.3-alpine3.23
+    environment:
+      POSTGRES_DB: team-manager
+      POSTGRES_USER: team-manager
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U team-manager -d team-manager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:v0.80.3
+    environment:
+      ZO_ROOT_USER_EMAIL: root@example.com
+      ZO_ROOT_USER_PASSWORD: Complexpass#123
+      ZO_DATA_DIR: /data
+    ports:
+      - "15080:5080"
+    volumes:
+      - openobserve_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://team-manager:password@postgres:5432/team-manager
+      JWT_SECRET: dev-secret-change-in-production
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://openobserve:5080/api/default
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/backend/src
+          target: /app/apps/backend/src
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      target: dev
+    environment:
+      BACKEND_URL: http://backend:3000
+    ports:
+      - "5174:5173"
+    depends_on:
+      - backend
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/frontend/src
+          target: /app/apps/frontend/src
+
+volumes:
+  postgres_data:
+  openobserve_data:
