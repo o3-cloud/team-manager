@@ -47,7 +47,7 @@
 
 - Global prefix: `/api` — health endpoint is `/api/health`.
 - Validate all external inputs with class-validator DTOs + `ValidationPipe`.
-- `SanitizeBodyMiddleware` strips HTML from body strings globally.
+- `SanitizeBodyMiddleware` blocks prototype-pollution keys (`__proto__`, `constructor`, `prototype`) on all request bodies globally. It does NOT strip HTML from body strings — `@Matches(/^[^<>'";&]+$/)` on stored text DTO fields is the XSS guard.
 - Optimistic concurrency on `Event`: client must send `version`; mismatch → HTTP 409.
 - Overlap warnings on event create/update are non-blocking (returned in response, not rejected).
 - See [ADR-0001](../../docs/domain/adr/0001-schedule-api-conventions.md) for Schedule API conventions.
@@ -84,3 +84,91 @@
 
 - Small and focused. Description: what changed, why, risks, test evidence.
 - CI must pass: lint → typecheck → unit tests → integration tests → Docker build → Trivy → SBOM → Playwright E2E.
+
+## Learned patterns
+
+### HTTP status semantics — validation 400 vs conflict 409
+
+Use `BadRequestException` (400) for input that is structurally or semantically invalid
+(blank string after trim, value out of allowed range). Use `ConflictException` (409) only
+for resource-state conflicts (unique constraint violation, duplicate creation attempt).
+
+Anti-pattern: `TeamsService.create` with a blank name after trim throws `ConflictException`
+— the client receives 409 but the input was never valid; no conflict exists.
+
+> Added: team-core run, 2026-05-27.
+
+### DELETE endpoint idempotency
+
+`DELETE` must be idempotent: calling it a second time on an already-deleted/revoked resource
+must return `204` (or `200`), not `409`. Anti-pattern: `InvitesService.revoke` throws
+`ConflictException` when the invite is already revoked — clients that retry on network
+failure receive an error on an operation that logically succeeded.
+
+Pattern: resolve the entity; if already in the terminal state, return the success response
+without re-executing the mutation.
+
+> Added: team-core run, 2026-05-27.
+
+### TypeORM nullable column — always specify `type` explicitly
+
+TypeORM **cannot infer** the database column type from a TypeScript `string | null` or `number | null` union. The inferred type becomes `"Object"` which causes a runtime error at startup.
+
+**Rule:** Every `@Column({ nullable: true })` on a string or uuid field MUST include an explicit `type`:
+
+```ts
+// ❌ breaks — TypeORM infers "Object"
+@Column({ name: 'series_id', nullable: true })
+seriesId: string | null;
+
+// ✅ correct
+@Column({ name: 'series_id', type: 'uuid', nullable: true })
+seriesId: string | null;
+
+@Column({ type: 'varchar', length: 300, nullable: true })
+location: string | null;
+```
+
+> Added: implement-bdrs run, 2026-05-27. Hit on EventEntity.seriesId, EventEntity.location, NotificationEntity.refId.
+
+### TeamMemberGuard — MembershipEntity must be in forFeature
+
+`TeamMemberGuard` injects `@InjectRepository(MembershipEntity)`. Any NestJS module whose controller is decorated with `@UseGuards(JwtAuthGuard, TeamMemberGuard)` MUST include `MembershipEntity` in its `TypeOrmModule.forFeature([..., MembershipEntity])` list, even if the module's own service does not use MembershipEntity.
+
+Omitting it causes: `Nest can't resolve dependencies of the TeamMemberGuard`.
+
+> Added: implement-bdrs run, 2026-05-27. Hit on rsvp, attendance, game-results, notifications modules.
+
+### rrule — always set dtstart explicitly
+
+`RRule.fromString(str)` with no DTSTART sets dtstart to the current moment. Calling `rule.between(futureDate, endDate)` will then return zero occurrences if the rule's computed dates (relative to "now") are all before `futureDate`.
+
+**Pattern:** Always construct with an explicit dtstart matching the event's `firstStartsAt`:
+
+```ts
+// ❌ breaks for future dates
+const rule = RRule.fromString(dto.rruleString);
+const occurrences = rule.between(firstStart, endDate, true); // → []
+
+// ✅ correct
+const parsed = RRule.parseString(dto.rruleString);
+const rule = new RRule({ ...parsed, dtstart: firstStart });
+const occurrences = rule.between(firstStart, endDate, true); // → [...]
+```
+
+> Added: implement-bdrs run, 2026-05-27.
+
+### NestJS `@Post()` returns 201 by default
+
+NestJS `@Post()` endpoints return HTTP **201 Created** unless `@HttpCode(200)` is applied. This affects: cancel, reinstate, accept-invite, and any other state-transition endpoint implemented as `@Post()`. Integration tests and smoke tests must expect `201`, not `200`, for these routes.
+
+> Added: implement-bdrs run, 2026-05-27. Caused test failures in rsvp.e2e-spec.ts (cancel step) and gate 8 smoke tests.
+
+### Smoke test against HTTP, not service layer
+
+Integration tests call NestJS service methods and bypass the HTTP serialization layer (field-name transforms, DTO validation, response serialization). Always supplement with at least one smoke test per new module that exercises the API over HTTP (curl or supertest at the HTTP layer) to catch:
+- DTO field name mismatches (`playerName` vs `displayName`)
+- Required-but-missing fields not obvious from the TS type (`seasonId` in RecordGameResultDto)
+- Route path differences from what was assumed
+
+> Added: implement-bdrs run, 2026-05-27.

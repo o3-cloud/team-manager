@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { canWrite, useTeamRole } from '../hooks/useTeamRole';
 import { api } from '../lib/api';
 
 type EventStatus = 'SCHEDULED' | 'CANCELLED';
@@ -28,6 +29,7 @@ interface RsvpSummary {
 
 export default function EventDetailPage() {
   const { teamId, eventId } = useParams<{ teamId: string; eventId: string }>();
+  const role = useTeamRole(teamId);
   const [event, setEvent] = useState<TeamEvent | null>(null);
   const [rsvpSummary, setRsvpSummary] = useState<RsvpSummary | null>(null);
   const [error, setError] = useState('');
@@ -35,6 +37,8 @@ export default function EventDetailPage() {
   const [actionError, setActionError] = useState('');
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
   const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     if (!teamId || !eventId) return;
@@ -65,16 +69,18 @@ export default function EventDetailPage() {
     }
   }
 
-  async function cancelEvent() {
+  async function cancelEvent(reason: string) {
     if (!teamId || !eventId || !event) return;
     setActionSubmitting(true);
     setActionError('');
     try {
       const updated = await api.post<TeamEvent>(`/teams/${teamId}/events/${eventId}/cancel`, {
         version: event.version,
-        reason: '',
+        reason,
       });
       setEvent(updated);
+      setShowCancelForm(false);
+      setCancelReason('');
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to cancel event');
     } finally {
@@ -159,8 +165,6 @@ export default function EventDetailPage() {
               <span className="opacity-60">Notes:</span> {event.notes}
             </p>
           )}
-
-          <p className="text-xs opacity-40">Version {event.version}</p>
         </div>
 
         {/* RSVP section */}
@@ -169,13 +173,16 @@ export default function EventDetailPage() {
 
           {rsvpError && <div className="alert alert-error text-sm">{rsvpError}</div>}
 
+          {event.status === 'CANCELLED' && (
+            <p className="text-sm opacity-60">Event is cancelled — RSVP not available</p>
+          )}
           <div className="flex gap-2">
             {(['GOING', 'MAYBE', 'NOT_GOING'] as RsvpStatus[]).map((s) => (
               <button
                 key={s}
                 type="button"
                 className={`btn btn-sm${s === 'GOING' ? ' btn-success' : s === 'MAYBE' ? ' btn-warning' : ' btn-error'}`}
-                disabled={rsvpSubmitting}
+                disabled={rsvpSubmitting || event.status === 'CANCELLED'}
                 onClick={() => submitRsvp(s)}
               >
                 {s === 'NOT_GOING' ? 'Not Going' : s.charAt(0) + s.slice(1).toLowerCase()}
@@ -208,18 +215,49 @@ export default function EventDetailPage() {
 
           {actionError && <div className="alert alert-error text-sm">{actionError}</div>}
 
-          {event.status === 'SCHEDULED' && (
+          {canWrite(role) && event.status === 'SCHEDULED' && !showCancelForm && (
             <button
               type="button"
               className="btn btn-warning btn-sm"
-              disabled={actionSubmitting}
-              onClick={cancelEvent}
+              onClick={() => setShowCancelForm(true)}
             >
-              {actionSubmitting ? 'Cancelling…' : 'Cancel Event'}
+              Cancel Event
             </button>
           )}
 
-          {event.status === 'CANCELLED' && (
+          {canWrite(role) && event.status === 'SCHEDULED' && showCancelForm && (
+            <div className="space-y-2">
+              <textarea
+                className="textarea textarea-bordered w-full text-sm"
+                placeholder="Reason for cancellation (optional)"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={2}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-warning btn-sm"
+                  disabled={actionSubmitting}
+                  onClick={() => cancelEvent(cancelReason)}
+                >
+                  {actionSubmitting ? 'Cancelling…' : 'Confirm Cancellation'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setShowCancelForm(false);
+                    setCancelReason('');
+                  }}
+                >
+                  Never mind
+                </button>
+              </div>
+            </div>
+          )}
+
+          {canWrite(role) && event.status === 'CANCELLED' && (
             <button
               type="button"
               className="btn btn-success btn-sm"

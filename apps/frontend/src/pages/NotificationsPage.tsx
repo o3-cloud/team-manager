@@ -2,6 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 
+const NOTIFICATION_LABELS: Record<string, string> = {
+  ANNOUNCEMENT_POSTED: 'New Announcement',
+  EVENT_CANCELLED: 'Event Cancelled',
+  EVENT_REINSTATED: 'Event Reinstated',
+  GAME_RESULT_RECORDED: 'Game Result',
+  INVITE_ACCEPTED: 'Member Joined',
+};
+
+function notificationLabel(type: string): string {
+  return NOTIFICATION_LABELS[type] ?? type;
+}
+
 interface Notification {
   id: string;
   message: string;
@@ -95,7 +107,9 @@ export default function NotificationsPage() {
                   <div className="space-y-1 flex-1 min-w-0">
                     <p className={`text-sm ${n.isRead ? '' : 'font-bold'}`}>{n.message}</p>
                     <div className="flex items-center gap-2">
-                      <span className="badge badge-ghost badge-xs">{n.type}</span>
+                      <span className="badge badge-ghost badge-xs">
+                        {notificationLabel(n.type)}
+                      </span>
                       <span className="text-xs opacity-50">
                         {new Date(n.createdAt).toLocaleString()}
                       </span>

@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { canWrite, useTeamRole } from '../hooks/useTeamRole';
 import { api } from '../lib/api';
 
 interface Announcement {
@@ -12,6 +13,7 @@ interface Announcement {
 
 export default function AnnouncementsPage() {
   const { teamId } = useParams<{ teamId: string }>();
+  const role = useTeamRole(teamId);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -73,39 +75,41 @@ export default function AnnouncementsPage() {
           </Link>
         </header>
 
-        <form onSubmit={handlePost} className="card bg-base-100 shadow p-5 space-y-3">
-          <h2 className="font-semibold text-lg">Post Announcement</h2>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={200}
-            required
-          />
-          <textarea
-            className="textarea textarea-bordered w-full"
-            placeholder="Body"
-            rows={4}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            required
-          />
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+        {canWrite(role) && (
+          <form onSubmit={handlePost} className="card bg-base-100 shadow p-5 space-y-3">
+            <h2 className="font-semibold text-lg">Post Announcement</h2>
             <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
-              checked={pinned}
-              onChange={(e) => setPinned(e.target.checked)}
+              type="text"
+              className="input input-bordered w-full"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              required
             />
-            <span className="text-sm">Pin this announcement</span>
-          </label>
-          {error && <div className="alert alert-error text-sm">{error}</div>}
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? <span className="loading loading-spinner loading-sm" /> : 'Post'}
-          </button>
-        </form>
+            <textarea
+              className="textarea textarea-bordered w-full"
+              placeholder="Body"
+              rows={4}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              required
+            />
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm"
+                checked={pinned}
+                onChange={(e) => setPinned(e.target.checked)}
+              />
+              <span className="text-sm">Pin this announcement</span>
+            </label>
+            {error && <div className="alert alert-error text-sm">{error}</div>}
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? <span className="loading loading-spinner loading-sm" /> : 'Post'}
+            </button>
+          </form>
+        )}
 
         {announcements.length === 0 ? (
           <div className="card bg-base-100 shadow p-6 text-center opacity-60">
@@ -120,18 +124,20 @@ export default function AnnouncementsPage() {
                     <span className="font-semibold">{a.title}</span>
                     {a.pinned && <span className="badge badge-accent badge-sm">Pinned</span>}
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-ghost text-error shrink-0"
-                    onClick={() => handleDelete(a.id)}
-                    disabled={deleting === a.id}
-                  >
-                    {deleting === a.id ? (
-                      <span className="loading loading-spinner loading-xs" />
-                    ) : (
-                      'Delete'
-                    )}
-                  </button>
+                  {canWrite(role) && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost text-error shrink-0"
+                      onClick={() => handleDelete(a.id)}
+                      disabled={deleting === a.id}
+                    >
+                      {deleting === a.id ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : (
+                        'Delete'
+                      )}
+                    </button>
+                  )}
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{a.body}</p>
                 <span className="text-xs opacity-50">{new Date(a.createdAt).toLocaleString()}</span>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { canWrite, useTeamRole } from '../hooks/useTeamRole';
 import { api } from '../lib/api';
 
 type EventType = 'GAME' | 'PRACTICE' | 'MEETING' | 'OTHER';
@@ -18,6 +19,7 @@ interface TeamEvent {
 export default function EventsPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
+  const role = useTeamRole(teamId);
   const [events, setEvents] = useState<TeamEvent[]>([]);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -73,18 +75,20 @@ export default function EventsPage() {
 
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Events</h1>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => setShowForm((v) => !v)}
-          >
-            {showForm ? 'Cancel' : 'Create Event'}
-          </button>
+          {canWrite(role) && (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => setShowForm((v) => !v)}
+            >
+              {showForm ? 'Cancel' : 'Create Event'}
+            </button>
+          )}
         </div>
 
         {error && <div className="alert alert-error text-sm">{error}</div>}
 
-        {showForm && (
+        {showForm && canWrite(role) && (
           <div className="card bg-base-100 shadow p-4">
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="form-control">
