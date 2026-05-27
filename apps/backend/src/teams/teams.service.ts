@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -23,7 +24,7 @@ export class TeamsService {
 
   async create(dto: CreateTeamDto, owner: UserEntity): Promise<TeamEntity> {
     const name = dto.name.trim();
-    if (!name) throw new ConflictException('Team name cannot be blank');
+    if (!name) throw new BadRequestException('Team name cannot be blank');
 
     const team = this.teamRepo.create({ ownerId: owner.id, name });
 
@@ -54,11 +55,11 @@ export class TeamsService {
   }
 
   async findOne(teamId: string, userId: string): Promise<TeamEntity> {
-    const membership = await this.membershipRepo.findOneBy({ teamId, userId });
-    if (!membership) throw new ForbiddenException('Not a member of this team');
-
     const team = await this.teamRepo.findOneBy({ id: teamId });
     if (!team) throw new NotFoundException('Team not found');
+
+    const membership = await this.membershipRepo.findOneBy({ teamId, userId });
+    if (!membership) throw new ForbiddenException('Not a member of this team');
     return team;
   }
 }

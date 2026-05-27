@@ -21,8 +21,8 @@ export class InviteEntity {
   @Column({ type: 'enum', enum: TeamRole })
   role: TeamRole;
 
-  @Column({ length: 64, unique: true })
-  token: string;
+  @Column({ name: 'token_hash', length: 64, unique: true })
+  tokenHash: string;
 
   @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt: Date;

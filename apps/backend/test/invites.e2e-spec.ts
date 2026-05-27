@@ -31,7 +31,7 @@ describe('BDR-012: Team Joining / Invitations (e2e)', () => {
 
   afterAll(teardownTestApp);
 
-  // Scenario 1 — Successful invite acceptance
+  // Scenario 1 — Successful invite acceptance (AC-2.2: accepted invite still works after hashing)
   it('player accepts invite and joins team with correct role', async () => {
     const invite = await request(app.getHttpServer())
       .post(`/teams/${teamId}/invites`)
@@ -56,7 +56,7 @@ describe('BDR-012: Team Joining / Invitations (e2e)', () => {
   });
 
   // Scenario 4 — Duplicate membership rejected
-  it('rejcts accepting invite when already a member', async () => {
+  it('rejects accepting invite when already a member', async () => {
     const invite = await request(app.getHttpServer())
       .post(`/teams/${teamId}/invites`)
       .set('Authorization', `Bearer ${coachToken}`)
@@ -82,18 +82,20 @@ describe('BDR-012: Team Joining / Invitations (e2e)', () => {
       .send({ role: 'PLAYER' })
       .expect(201);
 
+    const rawToken = invite.body.token;
+
     await request(app.getHttpServer())
       .delete(`/teams/${teamId}/invites/${invite.body.id}`)
       .set('Authorization', `Bearer ${coachToken}`)
       .expect(200);
 
     await request(app.getHttpServer())
-      .post(`/invites/${invite.body.token}/accept`)
+      .post(`/invites/${rawToken}/accept`)
       .set('Authorization', `Bearer ${playerToken2}`)
       .expect(410);
   });
 
-  // Scenario 2 — Expired invite rejected (simulated via already-accepted token)
+  // Scenario 2 — Already-accepted invite cannot be reused
   it('already-accepted invite cannot be reused', async () => {
     const r4 = await request(app.getHttpServer())
       .post('/auth/register')
@@ -111,14 +113,85 @@ describe('BDR-012: Team Joining / Invitations (e2e)', () => {
       .send({ role: 'PLAYER' })
       .expect(201);
 
+    const rawToken = invite.body.token;
+
     await request(app.getHttpServer())
-      .post(`/invites/${invite.body.token}/accept`)
+      .post(`/invites/${rawToken}/accept`)
       .set('Authorization', `Bearer ${playerToken3}`)
       .expect(201);
 
     await request(app.getHttpServer())
-      .post(`/invites/${invite.body.token}/accept`)
+      .post(`/invites/${rawToken}/accept`)
       .set('Authorization', `Bearer ${playerToken4}`)
       .expect(410);
+  });
+
+  // AC-2.1 — Token absent from invite list response (F-2)
+  it('invite list does not expose raw token', async () => {
+    const invites = await request(app.getHttpServer())
+      .get(`/teams/${teamId}/invites`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(200);
+
+    expect(Array.isArray(invites.body)).toBe(true);
+    for (const invite of invites.body) {
+      expect(invite).not.toHaveProperty('token');
+      expect(invite).not.toHaveProperty('tokenHash');
+      expect(invite).toHaveProperty('id');
+      expect(invite).toHaveProperty('status');
+    }
+  });
+
+  // AC-5.1 — Double-revoke returns 200 both times (F-5)
+  it('revoking an already-revoked invite returns 200 (idempotent)', async () => {
+    const r6 = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'invite-player5@example.com', displayName: 'Invite Player 5', password: 'Password1!' });
+    const playerToken5 = r6.body.accessToken;
+    void playerToken5;
+
+    const invite = await request(app.getHttpServer())
+      .post(`/teams/${teamId}/invites`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ role: 'PLAYER' })
+      .expect(201);
+
+    const first = await request(app.getHttpServer())
+      .delete(`/teams/${teamId}/invites/${invite.body.id}`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(200);
+
+    expect(first.body.status).toBe('REVOKED');
+
+    const second = await request(app.getHttpServer())
+      .delete(`/teams/${teamId}/invites/${invite.body.id}`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(200);
+
+    expect(second.body.status).toBe('REVOKED');
+  });
+
+  // AC-5.2 — Revoking an ACCEPTED invite still returns 409 (unchanged)
+  it('revoking an already-accepted invite returns 409', async () => {
+    const r7 = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'invite-player6@example.com', displayName: 'Invite Player 6', password: 'Password1!' });
+    const playerToken6 = r7.body.accessToken;
+
+    const invite = await request(app.getHttpServer())
+      .post(`/teams/${teamId}/invites`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ role: 'PLAYER' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/invites/${invite.body.token}/accept`)
+      .set('Authorization', `Bearer ${playerToken6}`)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .delete(`/teams/${teamId}/invites/${invite.body.id}`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(409);
   });
 });

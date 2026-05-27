@@ -68,15 +68,13 @@ describe('BDR-002: Team Creation (e2e)', () => {
       .expect(400);
   });
 
-  // Scenario 4 — Whitespace-only team name
-  it('rejects whitespace-only team name', async () => {
+  // Scenario 4 — Whitespace-only team name (AC-4.1: blank name returns 400 not 409)
+  it('rejects whitespace-only team name with 400', async () => {
     await request(app.getHttpServer())
       .post('/teams')
       .set('Authorization', `Bearer ${token}`)
       .send({ name: '   ' })
-      .expect((res) => {
-        expect([400, 409]).toContain(res.status);
-      });
+      .expect(400);
   });
 
   // Scenario 5 — Team name too long
@@ -154,5 +152,31 @@ describe('BDR-002: Team Creation (e2e)', () => {
       .get(`/teams/${res.body.id}`)
       .set('Authorization', `Bearer ${token2}`)
       .expect(403);
+  });
+
+  // Scenario 10 — Non-existent team UUID returns 404 (AC-1.1, F-1)
+  it('returns 404 for a non-existent team UUID', async () => {
+    await request(app.getHttpServer())
+      .get('/teams/00000000-0000-0000-0000-000000000000')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(404);
+  });
+
+  // Scenario 11 — HTML metacharacters in name rejected (AC-3.1, F-3)
+  it('rejects team name with HTML metacharacters', async () => {
+    await request(app.getHttpServer())
+      .post('/teams')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: '<script>alert(1)</script>' })
+      .expect(400);
+  });
+
+  // Scenario 12 — SQL metacharacters in name rejected (AC-3.2, F-3)
+  it('rejects team name with SQL metacharacters', async () => {
+    await request(app.getHttpServer())
+      .post('/teams')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: "'; DROP TABLE teams; --" })
+      .expect(400);
   });
 });

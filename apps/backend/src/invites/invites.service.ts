@@ -1,3 +1,4 @@
+import * as crypto from 'node:crypto';
 import {
   ConflictException,
   ForbiddenException,
@@ -6,10 +7,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as crypto from 'crypto';
 import { QueryFailedError, Repository } from 'typeorm';
 import { TeamRole } from '../common/enums/team-role.enum';
 import { MembershipEntity } from '../memberships/entities/membership.entity';
+import { InviteCreatedDto } from './dto/invite-created.dto';
+import { InvitePublicDto } from './dto/invite-public.dto';
 import { InviteEntity, InviteStatus } from './entities/invite.entity';
 
 const INVITE_TTL_HOURS = 72;
@@ -23,16 +25,19 @@ export class InvitesService {
     private readonly membershipRepo: Repository<MembershipEntity>,
   ) {}
 
-  async create(teamId: string, createdBy: string, role: TeamRole): Promise<InviteEntity> {
-    const token = crypto.randomBytes(32).toString('hex');
+  async create(teamId: string, createdBy: string, role: TeamRole): Promise<InviteCreatedDto> {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000);
 
-    const invite = this.inviteRepo.create({ teamId, createdBy, role, token, expiresAt });
-    return this.inviteRepo.save(invite);
+    const invite = this.inviteRepo.create({ teamId, createdBy, role, tokenHash, expiresAt });
+    const saved = await this.inviteRepo.save(invite);
+    return InviteCreatedDto.fromWithToken(saved, rawToken);
   }
 
-  async accept(token: string, userId: string): Promise<MembershipEntity> {
-    const invite = await this.inviteRepo.findOneBy({ token });
+  async accept(rawToken: string, userId: string): Promise<MembershipEntity> {
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const invite = await this.inviteRepo.findOneBy({ tokenHash });
     if (!invite) throw new NotFoundException('Invite not found');
 
     if (invite.status !== InviteStatus.PENDING) {
@@ -65,7 +70,7 @@ export class InvitesService {
     }
   }
 
-  async revoke(teamId: string, inviteId: string, actorId: string): Promise<InviteEntity> {
+  async revoke(teamId: string, inviteId: string, actorId: string): Promise<InvitePublicDto> {
     const invite = await this.inviteRepo.findOneBy({ id: inviteId, teamId });
     if (!invite) throw new NotFoundException('Invite not found');
     if (invite.createdBy !== actorId) {
@@ -74,15 +79,19 @@ export class InvitesService {
         throw new ForbiddenException('Cannot revoke this invite');
       }
     }
+    if (invite.status === InviteStatus.REVOKED) {
+      return InvitePublicDto.from(invite);
+    }
     if (invite.status !== InviteStatus.PENDING) {
       throw new ConflictException('Invite is not pending');
     }
 
     invite.status = InviteStatus.REVOKED;
-    return this.inviteRepo.save(invite);
+    return InvitePublicDto.from(await this.inviteRepo.save(invite));
   }
 
-  findByTeam(teamId: string): Promise<InviteEntity[]> {
-    return this.inviteRepo.findBy({ teamId });
+  async findByTeam(teamId: string): Promise<InvitePublicDto[]> {
+    const invites = await this.inviteRepo.findBy({ teamId });
+    return invites.map(InvitePublicDto.from);
   }
 }
