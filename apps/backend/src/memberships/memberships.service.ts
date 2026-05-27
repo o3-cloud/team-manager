@@ -2,7 +2,17 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MANAGE_TEAM_ROLES, TeamRole } from '../common/enums/team-role.enum';
+import { UserEntity } from '../users/entities/user.entity';
 import { MembershipEntity } from './entities/membership.entity';
+
+export type MemberWithDisplayName = {
+  id: string;
+  teamId: string;
+  userId: string;
+  role: TeamRole;
+  createdAt: Date;
+  displayName: string | null;
+};
 
 @Injectable()
 export class MembershipsService {
@@ -11,8 +21,18 @@ export class MembershipsService {
     private readonly membershipRepo: Repository<MembershipEntity>,
   ) {}
 
-  async findByTeam(teamId: string): Promise<MembershipEntity[]> {
-    return this.membershipRepo.findBy({ teamId });
+  async findByTeam(teamId: string): Promise<MemberWithDisplayName[]> {
+    return this.membershipRepo
+      .createQueryBuilder('m')
+      .leftJoin(UserEntity, 'u', 'm.user_id = u.id')
+      .select('m.id', 'id')
+      .addSelect('m.teamId', 'teamId')
+      .addSelect('m.userId', 'userId')
+      .addSelect('m.role', 'role')
+      .addSelect('m.createdAt', 'createdAt')
+      .addSelect('u.displayName', 'displayName')
+      .where('m.teamId = :teamId', { teamId })
+      .getRawMany<MemberWithDisplayName>();
   }
 
   async updateRole(

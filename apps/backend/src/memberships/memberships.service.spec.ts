@@ -17,13 +17,34 @@ const mockMembership = (overrides: Partial<MembershipEntity> = {}): MembershipEn
 
 describe('MembershipsService', () => {
   let service: MembershipsService;
-  let repo: { findBy: jest.Mock; findOneBy: jest.Mock; save: jest.Mock };
+  let repo: {
+    findBy: jest.Mock;
+    findOneBy: jest.Mock;
+    save: jest.Mock;
+    createQueryBuilder: jest.Mock;
+  };
+  let mockQb: {
+    leftJoin: jest.Mock;
+    select: jest.Mock;
+    addSelect: jest.Mock;
+    where: jest.Mock;
+    getRawMany: jest.Mock;
+  };
 
   beforeEach(async () => {
+    mockQb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn(),
+    };
+
     repo = {
       findBy: jest.fn(),
       findOneBy: jest.fn(),
       save: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(mockQb),
     };
 
     const module = await Test.createTestingModule({
@@ -34,6 +55,59 @@ describe('MembershipsService', () => {
     }).compile();
 
     service = module.get(MembershipsService);
+  });
+
+  describe('findByTeam', () => {
+    it('returns members with displayName resolved from LEFT JOIN', async () => {
+      const rows = [
+        {
+          id: 'mem-1',
+          teamId: 'team-1',
+          userId: 'user-1',
+          role: TeamRole.PLAYER,
+          createdAt: new Date(),
+          displayName: 'Alice Smith',
+        },
+      ];
+      mockQb.getRawMany.mockResolvedValue(rows);
+
+      const result = await service.findByTeam('team-1');
+
+      expect(result).toEqual(rows);
+      const [first] = result;
+      expect(first?.displayName).toBe('Alice Smith');
+      expect(repo.createQueryBuilder).toHaveBeenCalledWith('m');
+      expect(mockQb.leftJoin).toHaveBeenCalledTimes(1);
+      expect(mockQb.where).toHaveBeenCalledWith('m.teamId = :teamId', { teamId: 'team-1' });
+    });
+
+    // AC-005 edge — orphaned membership (no matching UserEntity)
+    it('returns displayName null when no matching UserEntity row', async () => {
+      const rows = [
+        {
+          id: 'mem-1',
+          teamId: 'team-1',
+          userId: 'user-orphan',
+          role: TeamRole.PLAYER,
+          createdAt: new Date(),
+          displayName: null,
+        },
+      ];
+      mockQb.getRawMany.mockResolvedValue(rows);
+
+      const result = await service.findByTeam('team-1');
+
+      const [first] = result;
+      expect(first?.displayName).toBeNull();
+    });
+
+    it('returns empty array when team has no members', async () => {
+      mockQb.getRawMany.mockResolvedValue([]);
+
+      const result = await service.findByTeam('team-1');
+
+      expect(result).toEqual([]);
+    });
   });
 
   describe('updateRole', () => {
