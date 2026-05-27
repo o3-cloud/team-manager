@@ -23,8 +23,6 @@ interface RosterEntry {
   position: string | null;
 }
 
-type Tab = 'members' | 'seasons' | 'roster' | 'invites';
-
 interface Invite {
   id: string;
   role: string;
@@ -32,6 +30,8 @@ interface Invite {
   status: string;
   expiresAt: string;
 }
+
+type Tab = 'members' | 'seasons' | 'roster' | 'invites';
 
 export default function TeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -81,9 +81,25 @@ export default function TeamDetailPage() {
   return (
     <div className="min-h-screen bg-base-200 p-6">
       <div className="max-w-3xl mx-auto space-y-4">
-        <Link to="/teams" className="btn btn-sm btn-ghost">
-          ← Back to teams
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link to="/teams" className="btn btn-sm btn-ghost">
+            ← Back to teams
+          </Link>
+          <div className="flex gap-2">
+            <Link to={`/teams/${teamId}/events`} className="btn btn-sm btn-outline">
+              Events
+            </Link>
+            <Link to={`/teams/${teamId}/announcements`} className="btn btn-sm btn-outline">
+              Announcements
+            </Link>
+            <Link to={`/teams/${teamId}/notifications`} className="btn btn-sm btn-outline">
+              Notifications
+            </Link>
+            <Link to={`/teams/${teamId}/game-results`} className="btn btn-sm btn-outline">
+              Results
+            </Link>
+          </div>
+        </div>
 
         {error && <div className="alert alert-error text-sm">{error}</div>}
 

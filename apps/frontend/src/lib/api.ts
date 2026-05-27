@@ -19,7 +19,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     'Content-Type': 'application/json',
     ...(init.headers as Record<string, string>),
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
 
@@ -38,5 +38,7 @@ export const api = {
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
   patch: <T>(path: string, data: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(data) }),
+  put: <T>(path: string, data: unknown) =>
+    request<T>(path, { method: 'PUT', body: JSON.stringify(data) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };

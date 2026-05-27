@@ -1,0 +1,16 @@
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+
+export class CreateAnnouncementDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  body!: string;
+
+  @IsBoolean()
+  @IsOptional()
+  pinned?: boolean;
+}
