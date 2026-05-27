@@ -47,6 +47,7 @@ const sdk = new NodeSDK({
 
 try {
   sdk.start();
+  console.log(`OpenTelemetry SDK started — exporting to ${otlpBase}`);
   logs.getLogger(serviceName).emit({
     severityNumber: SeverityNumber.INFO,
     severityText: 'INFO',

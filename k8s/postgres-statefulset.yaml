@@ -31,6 +31,10 @@ spec:
       containers:
         - name: postgres
           image: postgres:18.3-alpine3.23
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           envFrom:
             - configMapRef:
                 name: postgres-config
