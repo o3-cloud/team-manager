@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+
+@plugin 'daisyui';
+
+/* Sports Team Management palette — team-manager theme */
+[data-theme='team-manager'] {
+  color-scheme: light;
+
+  /* Primary: Action Blue #2563EB */
+  --color-primary: oklch(53.13% 0.2182 264.15);
+  --color-primary-content: oklch(100% 0 0);
+
+  /* Secondary: Slate Gray #64748B */
+  --color-secondary: oklch(50.21% 0.0337 243.38);
+  --color-secondary-content: oklch(100% 0 0);
+
+  /* Accent: Energy Orange #F97316 — dark content for WCAG AA (contrast 6.3:1) */
+  --color-accent: oklch(70.26% 0.2132 48.89);
+  --color-accent-content: oklch(13.60% 0.0282 264.54);
+
+  /* Neutral: Primary Navy #0F172A */
+  --color-neutral: oklch(11.35% 0.0549 253.07);
+  --color-neutral-content: oklch(100% 0 0);
+
+  /* Base scale */
+  --color-base-100: oklch(98.54% 0.0059 247.74); /* Background #F8FAFC */
+  --color-base-200: oklch(91.47% 0.0162 247.31); /* Surface Light #E2E8F0 */
+  --color-base-300: oklch(85% 0.02 247);
+  --color-base-content: oklch(13.60% 0.0282 264.54); /* Text Dark #111827 */
+
+  /* Info: standard sky blue */
+  --color-info: oklch(74.80% 0.127 220.80);
+  --color-info-content: oklch(100% 0 0);
+
+  /* Success: Victory Green #22C55E */
+  --color-success: oklch(71.41% 0.2183 149.55);
+  --color-success-content: oklch(100% 0 0);
+
+  /* Warning: Energy Orange #F97316 — dark content for WCAG AA */
+  --color-warning: oklch(70.26% 0.2132 48.89);
+  --color-warning-content: oklch(13.60% 0.0282 264.54);
+
+  /* Error: standard red */
+  --color-error: oklch(57.74% 0.2295 27.12);
+  --color-error-content: oklch(100% 0 0);
+
+  /* Shape */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.75rem;
+}
