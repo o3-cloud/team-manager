@@ -1,9 +1,9 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@plugin 'daisyui';
+@plugin "daisyui";
 
 /* Sports Team Management palette — team-manager theme */
-[data-theme='team-manager'] {
+[data-theme="team-manager"] {
   color-scheme: light;
 
   /* Primary: Action Blue #2563EB */
@@ -29,7 +29,7 @@
   --color-base-content: oklch(13.60% 0.0282 264.54); /* Text Dark #111827 */
 
   /* Info: standard sky blue */
-  --color-info: oklch(74.80% 0.127 220.80);
+  --color-info: oklch(74.80% 0.127 220.8);
   --color-info-content: oklch(100% 0 0);
 
   /* Success: Victory Green #22C55E */
