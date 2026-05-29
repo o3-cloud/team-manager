@@ -28,6 +28,8 @@ openobserveRum.init({
   defaultPrivacyLevel: 'mask-user-input',
 });
 
+openobserveRum.startSessionReplayRecording();
+
 openobserveLogs.init({
   clientToken,
   site,
@@ -39,7 +41,3 @@ openobserveLogs.init({
   insecureHTTP,
   forwardErrorsToLogs: true,
 });
-
-// Session-replay recording is intentionally not started by default — it is memory-heavy
-// and floods a small local OO instance. Opt in per-deployment:
-//   openobserveRum.startSessionReplayRecording();
