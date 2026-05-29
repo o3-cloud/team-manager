@@ -1,0 +1,9 @@
+[allowlist]
+description = "Dev-compose defaults and test fixture credentials — not production secrets"
+paths = [
+  '''docker-compose\.yml''',
+  '''apps/backend/test/.*\.e2e-spec\.ts''',
+  '''apps/backend/src/auth/auth\.service\.spec\.ts''',
+  '''k8s/secrets\.example\.yaml''',
+  '''apps/frontend/\.env\.production''',
+]
