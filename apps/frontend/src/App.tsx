@@ -1,10 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { AppLayout } from './components/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuth } from './contexts/AuthContext';
 import AnnouncementsPage from './pages/AnnouncementsPage';
+import DashboardPage from './pages/DashboardPage';
 import EventDetailPage from './pages/EventDetailPage';
 import EventsPage from './pages/EventsPage';
 import GameResultsPage from './pages/GameResultsPage';
+import InviteAcceptPage from './pages/InviteAcceptPage';
 import LoginPage from './pages/LoginPage';
 import NotificationsPage from './pages/NotificationsPage';
 import RegisterPage from './pages/RegisterPage';
@@ -30,53 +33,33 @@ export default function App() {
         }
       />
       <Route
+        path="/invites/:token"
+        element={
+          <ProtectedRoute>
+            <InviteAcceptPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Team-scoped routes share the AppLayout shell (sidebar + top bar) */}
+      <Route
         path="/teams/:teamId"
         element={
           <ProtectedRoute>
-            <TeamDetailPage />
+            <AppLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/teams/:teamId/events"
-        element={
-          <ProtectedRoute>
-            <EventsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teams/:teamId/events/:eventId"
-        element={
-          <ProtectedRoute>
-            <EventDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teams/:teamId/announcements"
-        element={
-          <ProtectedRoute>
-            <AnnouncementsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teams/:teamId/notifications"
-        element={
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teams/:teamId/game-results"
-        element={
-          <ProtectedRoute>
-            <GameResultsPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="detail" element={<TeamDetailPage />} />
+        <Route path="events" element={<EventsPage />} />
+        <Route path="events/:eventId" element={<EventDetailPage />} />
+        <Route path="announcements" element={<AnnouncementsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="game-results" element={<GameResultsPage />} />
+      </Route>
+
       <Route path="*" element={<Navigate to={token ? '/teams' : '/login'} replace />} />
     </Routes>
   );

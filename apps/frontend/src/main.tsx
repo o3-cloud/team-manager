@@ -6,6 +6,8 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
 
+document.documentElement.setAttribute('data-theme', 'team-manager');
+
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element not found');
 
