@@ -26,9 +26,12 @@ describe('telemetry initialisation', () => {
     expect(initOrder).toBeLessThan(replayOrder);
   });
 
-  it('configures mask-user-input privacy level (AC-2 / NFR-01)', () => {
+  it('configures mask-user-input privacy level and 100% sample rate (AC-2 / NFR-01)', () => {
     expect(openobserveRum.init).toHaveBeenCalledWith(
-      expect.objectContaining({ defaultPrivacyLevel: 'mask-user-input' }),
+      expect.objectContaining({
+        defaultPrivacyLevel: 'mask-user-input',
+        sessionReplaySampleRate: 100,
+      }),
     );
   });
 });

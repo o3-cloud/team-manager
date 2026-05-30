@@ -26,6 +26,7 @@ openobserveRum.init({
   trackLongTasks: true,
   trackUserInteractions: true,
   defaultPrivacyLevel: 'mask-user-input',
+  sessionReplaySampleRate: 100,
 });
 
 openobserveRum.startSessionReplayRecording();
