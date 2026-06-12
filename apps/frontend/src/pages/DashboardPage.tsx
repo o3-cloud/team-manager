@@ -55,6 +55,13 @@ const EVENT_TYPE_BADGE: Record<EventType, string> = {
   OTHER: 'badge-ghost',
 };
 
+const EVENT_TYPE_LABEL: Record<EventType, string> = {
+  GAME: 'Game',
+  PRACTICE: 'Practice',
+  MEETING: 'Meeting',
+  OTHER: 'Other',
+};
+
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
@@ -219,7 +226,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-lg font-semibold">{nextEvent.title}</p>
                       <span className={`badge ${EVENT_TYPE_BADGE[nextEvent.type]} badge-sm`}>
-                        {nextEvent.type}
+                        {EVENT_TYPE_LABEL[nextEvent.type]}
                       </span>
                       <p className="mt-1 text-sm text-base-content/70">
                         {formatDate(nextEvent.startsAt)} · {formatTime(nextEvent.startsAt)}
@@ -291,6 +298,11 @@ export default function DashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                  {roster.data.length > 6 && (
+                    <p className="text-xs text-base-content/50 mt-2 text-center">
+                      and {roster.data.length - 6} more — <Link to={`/teams/${teamId}/detail`} className="link link-primary">view all</Link>
+                    </p>
+                  )}
                 </div>
               )}
             </div>

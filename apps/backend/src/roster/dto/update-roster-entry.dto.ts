@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateRosterEntryDto {
   @IsOptional()
@@ -16,4 +16,8 @@ export class UpdateRosterEntryDto {
   @IsString()
   @MaxLength(50)
   position?: string;
+
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
 }

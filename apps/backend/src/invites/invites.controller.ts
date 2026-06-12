@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TeamRoles } from '../common/decorators/team-roles.decorator';
@@ -33,7 +43,7 @@ export class InvitesController {
   @TeamRoles(...MANAGE_TEAM_ROLES)
   revoke(
     @Param('teamId') teamId: string,
-    @Param('inviteId') inviteId: string,
+    @Param('inviteId', new ParseUUIDPipe({ version: '4' })) inviteId: string,
     @CurrentUser() user: UserEntity,
   ) {
     return this.invitesService.revoke(teamId, inviteId, user.id);

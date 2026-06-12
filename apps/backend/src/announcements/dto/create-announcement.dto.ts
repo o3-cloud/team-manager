@@ -1,4 +1,5 @@
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { AnnouncementAudience } from '../entities/announcement.entity';
 
 export class CreateAnnouncementDto {
   @IsString()
@@ -13,4 +14,12 @@ export class CreateAnnouncementDto {
   @IsBoolean()
   @IsOptional()
   pinned?: boolean;
+
+  @IsEnum(AnnouncementAudience)
+  @IsOptional()
+  targetAudience?: AnnouncementAudience;
+
+  @IsBoolean()
+  @IsOptional()
+  urgent?: boolean;
 }

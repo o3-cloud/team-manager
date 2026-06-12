@@ -128,4 +128,13 @@ describe('BDR-003: Role Assignment (e2e)', () => {
 
     expect(updated.body.role).toBe('PARENT');
   });
+
+  // BL-1 — Malformed userId on PATCH returns 400 (AC-7)
+  it('returns 400 for malformed userId on PATCH /teams/:teamId/members/:userId/role', async () => {
+    await request(app.getHttpServer())
+      .patch(`/teams/${teamId}/members/not-a-uuid/role`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ role: 'PARENT' })
+      .expect(400);
+  });
 });

@@ -1,8 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TeamRoles } from '../common/decorators/team-roles.decorator';
 import { WRITE_ROSTER_ROLES } from '../common/enums/team-role.enum';
-import { TeamMemberGuard } from '../common/guards/team-member.guard';
+import { TeamMemberGuard, TeamScopedRequest } from '../common/guards/team-member.guard';
 import { CreateRosterEntryDto } from './dto/create-roster-entry.dto';
 import { LinkParentDto } from './dto/link-parent.dto';
 import { UpdateRosterEntryDto } from './dto/update-roster-entry.dto';
@@ -24,11 +34,16 @@ export class RosterController {
     return this.rosterService.findByTeam(teamId);
   }
 
+  @Get('my-players')
+  myPlayers(@Param('teamId') teamId: string, @Req() req: TeamScopedRequest) {
+    return this.rosterService.findLinkedPlayers(teamId, req.user.id);
+  }
+
   @Patch(':entryId')
   @TeamRoles(...WRITE_ROSTER_ROLES)
   update(
     @Param('teamId') teamId: string,
-    @Param('entryId') entryId: string,
+    @Param('entryId', new ParseUUIDPipe({ version: '4' })) entryId: string,
     @Body() dto: UpdateRosterEntryDto,
   ) {
     return this.rosterService.updateEntry(teamId, entryId, dto);
@@ -38,7 +53,7 @@ export class RosterController {
   @TeamRoles(...WRITE_ROSTER_ROLES)
   linkParent(
     @Param('teamId') teamId: string,
-    @Param('entryId') entryId: string,
+    @Param('entryId', new ParseUUIDPipe({ version: '4' })) entryId: string,
     @Body() dto: LinkParentDto,
   ) {
     return this.rosterService.linkParent(teamId, entryId, dto.parentUserId);

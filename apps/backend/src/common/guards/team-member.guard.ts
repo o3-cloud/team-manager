@@ -1,6 +1,13 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
+import { isUUID } from 'class-validator';
 import { Repository } from 'typeorm';
 import { MembershipEntity } from '../../memberships/entities/membership.entity';
 import type { UserEntity } from '../../users/entities/user.entity';
@@ -28,6 +35,10 @@ export class TeamMemberGuard implements CanActivate {
 
     // Non-team-scoped routes pass through
     if (!teamId) return true;
+
+    if (!isUUID(teamId, '4')) {
+      throw new BadRequestException('teamId must be a valid UUID');
+    }
 
     const membership = await this.membershipRepo.findOneBy({
       userId: req.user.id,

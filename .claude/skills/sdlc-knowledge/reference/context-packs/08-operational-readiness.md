@@ -121,3 +121,43 @@ be ≥ 1024. Use `listen 8080` in `nginx.conf` and update the container port, re
 probe port, and Service `targetPort` to 8080 accordingly.
 
 > Added: team-core run, 2026-05-27. Deployment defect at gate 8.
+
+---
+
+### OpenObserve `doc_num=0` — WAL-flush artifact, not a pipeline failure
+
+The OpenObserve streams API (`/api/<org>/streams`) reports `doc_num` as the **on-disk committed count** after a WAL flush — it is not a real-time ingestion counter. Immediately after deployment or pod restart, `doc_num` can read `0` for minutes even when data is actively flowing.
+
+**Reliable OTel pipeline diagnostic — use the OO access log instead:**
+```bash
+kubectl logs deployment/openobserve -n <ns> | grep "POST /api/<org>/v1/"
+# Healthy: HTTP 200 on /v1/traces, /v1/metrics, /v1/logs
+# Problem: HTTP 4xx/5xx or missing lines entirely
+```
+
+Also add a startup `console.log` to the OTel init to confirm SDK startup and endpoint URL:
+```typescript
+sdk.start();
+console.log(`OpenTelemetry SDK started — exporting to ${otlpBase}`);
+```
+This gives an immediate human-readable signal in `kubectl logs` without querying OO.
+
+**Anti-pattern:** using `doc_num > 0` as the acceptance criterion for OTel pipeline health. WAL flush timing is non-deterministic; `doc_num=0` is a false alarm. Use HTTP 200 on OTLP POST endpoints as the authoritative signal.
+
+> Added: otel-k8s-hardening run, 2026-05-27.
+
+---
+
+### TypeORM / Postgres — transient DNS `ENOTFOUND` on k8s pod startup is normal
+
+When a Postgres StatefulSet pod is restarted (e.g., after a securityContext patch), the backend pod may log:
+
+```
+Error: getaddrinfo ENOTFOUND postgres
+```
+
+This is expected k8s behavior: the backend container starts before CoreDNS has fully propagated the `postgres` service endpoint to the pod's DNS resolver. TypeORM retries the connection and succeeds within 1–3 seconds. Pod reaches `1/1 Running` with 0 restarts.
+
+**Operator note:** this error during a rollout is NOT a crash or a misconfiguration. Do not rollback on this error alone. Confirm recovery by checking `kubectl get pods -n <ns>` (Running + 0 restarts) and `GET /api/health` returning `{"database":{"status":"up"}}`.
+
+> Added: otel-k8s-hardening run, 2026-05-27.

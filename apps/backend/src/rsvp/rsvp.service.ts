@@ -10,8 +10,16 @@ import { TeamRole } from '../common/enums/team-role.enum';
 import { EventEntity, EventStatus } from '../events/entities/event.entity';
 import { MembershipEntity } from '../memberships/entities/membership.entity';
 import { ParentPlayerLinkEntity } from '../roster/entities/parent-player-link.entity';
+import { RosterEntryEntity } from '../roster/entities/roster-entry.entity';
+import { UserEntity } from '../users/entities/user.entity';
 import { UpsertRsvpDto } from './dto/upsert-rsvp.dto';
-import { RsvpEntity } from './entities/rsvp.entity';
+import { RsvpEntity, RsvpStatus } from './entities/rsvp.entity';
+
+export interface RsvpEntryDto {
+  userId: string;
+  displayName: string | null;
+  status: RsvpStatus;
+}
 
 @Injectable()
 export class RsvpService {
@@ -45,7 +53,13 @@ export class RsvpService {
       if (!membership || membership.role !== TeamRole.PARENT) {
         throw new ForbiddenException('Only parents may RSVP on behalf of another user');
       }
-      const link = await this.linkRepo.findOneBy({ parentUserId: actorUserId });
+      const link = await this.linkRepo
+        .createQueryBuilder('l')
+        .innerJoin(RosterEntryEntity, 're', 're.id = l.rosterEntryId AND re.userId = :targetId', {
+          targetId: dto.onBehalfOfUserId,
+        })
+        .where('l.parentUserId = :parentUserId', { parentUserId: actorUserId })
+        .getOne();
       if (!link) {
         throw new ForbiddenException('No parent-player link found for this user');
       }
@@ -65,19 +79,24 @@ export class RsvpService {
   async findByEvent(
     teamId: string,
     eventId: string,
-  ): Promise<{ rsvps: RsvpEntity[]; nonRespondents: string[] }> {
+  ): Promise<{ rsvps: RsvpEntryDto[]; nonRespondents: number }> {
     const event = await this.eventRepo.findOneBy({ id: eventId, teamId });
     if (!event) throw new NotFoundException('Event not found');
 
     const [rsvps, memberships] = await Promise.all([
-      this.rsvpRepo.findBy({ eventId }),
+      this.rsvpRepo
+        .createQueryBuilder('r')
+        .select('r.userId', 'userId')
+        .addSelect('r.status', 'status')
+        .addSelect('u.displayName', 'displayName')
+        .leftJoin(UserEntity, 'u', 'u.id = r.userId')
+        .where('r.eventId = :eventId', { eventId })
+        .getRawMany<{ userId: string; status: RsvpStatus; displayName: string | null }>(),
       this.membershipRepo.findBy({ teamId }),
     ]);
 
     const respondedIds = new Set(rsvps.map((r) => r.userId));
-    const nonRespondents = memberships
-      .filter((m) => !respondedIds.has(m.userId))
-      .map((m) => m.userId);
+    const nonRespondents = memberships.filter((m) => !respondedIds.has(m.userId)).length;
 
     return { rsvps, nonRespondents };
   }

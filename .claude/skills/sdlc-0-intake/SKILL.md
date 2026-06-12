@@ -57,7 +57,8 @@ set up the run so the quality gates can execute against shared state.
    | Infrastructure / deploy | 2–3 | D, K, I, T, S, L, P, G |
 
 4. **Resolve the effective autonomy level**: the human's stated level overrides the
-   class default — it may lower autonomy or add rigor, never raise it. **Resolve risk
+   class default in either direction. The class default is a recommendation, not a ceiling —
+   a human operator may raise or lower the level as they see fit. **Resolve risk
    tolerance**: use the given `risk`, else the default for the level (L1→3, L2→4, L3→6,
    L4→8, L5→9).
 5. **Create the run directory** `.sdlc/runs/<slug>/` where `<slug>` is a short

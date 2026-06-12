@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserEntity } from '../users/entities/user.entity';
@@ -21,7 +21,10 @@ export class TeamsController {
   }
 
   @Get(':teamId')
-  findOne(@Param('teamId') teamId: string, @CurrentUser() user: UserEntity) {
+  findOne(
+    @Param('teamId', new ParseUUIDPipe({ version: '4' })) teamId: string,
+    @CurrentUser() user: UserEntity,
+  ) {
     return this.teamsService.findOne(teamId, user.id);
   }
 }

@@ -24,6 +24,7 @@ async function inviteAndAccept(
 describe('BDR-004: Roster Management (e2e)', () => {
   let app: INestApplication;
   let coachToken: string;
+  let coachUserId: string;
   let nonMemberToken: string;
   let teamId: string;
 
@@ -34,6 +35,7 @@ describe('BDR-004: Roster Management (e2e)', () => {
       .post('/auth/register')
       .send({ email: 'roster-coach@example.com', displayName: 'Roster Coach', password: 'Password1!' });
     coachToken = r1.body.accessToken;
+    coachUserId = r1.body.user.id;
 
     const r2 = await request(app.getHttpServer())
       .post('/auth/register')
@@ -168,5 +170,31 @@ describe('BDR-004: Roster Management (e2e)', () => {
       .get(`/teams/${teamId}/roster`)
       .set('Authorization', `Bearer ${nonMemberToken}`)
       .expect(403);
+  });
+
+  // AC-6 / FR-1d — PATCH can set userId (H-6 fix)
+  it('coach can patch a roster entry to set userId', async () => {
+    const add = await request(app.getHttpServer())
+      .post(`/teams/${teamId}/roster`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ displayName: 'User Link Test' })
+      .expect(201);
+
+    const updated = await request(app.getHttpServer())
+      .patch(`/teams/${teamId}/roster/${add.body.id}`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ userId: coachUserId })
+      .expect(200);
+
+    expect(updated.body.userId).toBe(coachUserId);
+  });
+
+  // BL-1 — Malformed entryId on PATCH returns 400 (AC-8)
+  it('returns 400 for malformed entryId on PATCH /teams/:teamId/roster/:entryId', async () => {
+    await request(app.getHttpServer())
+      .patch(`/teams/${teamId}/roster/not-a-uuid`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ playerName: 'Test', position: 'Forward' })
+      .expect(400);
   });
 });

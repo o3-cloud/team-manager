@@ -6,10 +6,9 @@ metadata:
 data:
   NODE_ENV: production
   CORS_ORIGIN: https://team-manager.example.com
-  OTEL_EXPORTER_OTLP_ENDPOINT: http://openobserve.team-manager.svc.cluster.local:5080/api/default
-  OTEL_EXPORTER_OTLP_USER: admin@example.local
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://o2c-openobserve-collector-gateway-collector.openobserve-collector.svc.cluster.local:4318
   OTEL_SERVICE_NAME: team-manager-backend
-  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
+  OTEL_RESOURCE_ATTRIBUTES: k8s.cluster.name=docker-desktop
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -52,11 +51,6 @@ spec:
                 secretKeyRef:
                   name: backend-secret
                   key: JWT_SECRET
-            - name: OTEL_EXPORTER_OTLP_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: openobserve-secret
-                  key: password
           readinessProbe:
             httpGet:
               path: /health

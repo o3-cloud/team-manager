@@ -6,6 +6,7 @@ const NOTIFICATION_LABELS: Record<string, string> = {
   ANNOUNCEMENT_POSTED: 'New Announcement',
   EVENT_CANCELLED: 'Event Cancelled',
   EVENT_REINSTATED: 'Event Reinstated',
+  EVENT_UPDATED: 'Event Updated',
   GAME_RESULT_RECORDED: 'Game Result',
   INVITE_ACCEPTED: 'Member Joined',
 };

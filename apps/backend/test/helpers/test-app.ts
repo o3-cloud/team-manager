@@ -15,6 +15,7 @@ export async function createTestApp(): Promise<{ app: INestApplication; dbUrl: s
 
   const dbUrl = container.getConnectionUri();
   process.env.DATABASE_URL = dbUrl;
+  process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-for-integration-tests';
 
   const module = await Test.createTestingModule({
     imports: [AppModule],

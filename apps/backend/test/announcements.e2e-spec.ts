@@ -43,7 +43,7 @@ describe('BDR-010: Announcements (e2e)', () => {
 
   afterAll(teardownTestApp);
 
-  // Scenario 1 — Coach posts an announcement
+  // Scenario 1 — Coach posts an announcement (AC-1: basic create)
   it('coach can post an announcement → 201 with correct fields', async () => {
     const res = await request(app.getHttpServer())
       .post(`/teams/${teamId}/announcements`)
@@ -55,6 +55,42 @@ describe('BDR-010: Announcements (e2e)', () => {
     expect(res.body.body).toBe('Come to practice');
     expect(res.body.pinned).toBe(false);
     expect(res.body.id).toBeDefined();
+    // New fields — defaults
+    expect(res.body.targetAudience).toBe('ALL');
+    expect(res.body.urgent).toBe(false);
+  });
+
+  // AC-1/FR-1a: targetAudience = PLAYERS stored correctly
+  it('coach can post a PLAYERS-targeted urgent announcement → 201 with correct fields', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/teams/${teamId}/announcements`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ title: 'Players Only', body: 'Drills today', targetAudience: 'PLAYERS', urgent: true })
+      .expect(201);
+
+    expect(res.body.targetAudience).toBe('PLAYERS');
+    expect(res.body.urgent).toBe(true);
+  });
+
+  // FR-1c: PLAYER sees PLAYERS-targeted and ALL announcements, not PARENTS-only
+  it('player sees ALL and PLAYERS announcements but NOT PARENTS-only (FR-1c)', async () => {
+    // Post a PARENTS-only announcement
+    await request(app.getHttpServer())
+      .post(`/teams/${teamId}/announcements`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ title: 'Parents Only Msg', body: 'Parent info', targetAudience: 'PARENTS' })
+      .expect(201);
+
+    // Player fetches announcements
+    const list = await request(app.getHttpServer())
+      .get(`/teams/${teamId}/announcements`)
+      .set('Authorization', `Bearer ${playerToken}`)
+      .expect(200);
+
+    const titles: string[] = list.body.map((a: { title: string }) => a.title);
+    expect(titles).not.toContain('Parents Only Msg');
+    // Players-targeted one should be visible
+    expect(titles).toContain('Players Only');
   });
 
   // Scenario 2 — Player cannot post → 403

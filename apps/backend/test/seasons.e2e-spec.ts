@@ -93,4 +93,12 @@ describe('BDR-013: Season Management (e2e)', () => {
       .set('Authorization', `Bearer ${playerToken}`)
       .expect(403);
   });
+
+  // BL-1 — Malformed seasonId on PATCH returns 400 (AC-9)
+  it('returns 400 for malformed seasonId on PATCH /teams/:teamId/seasons/:seasonId/archive', async () => {
+    await request(app.getHttpServer())
+      .patch(`/teams/${teamId}/seasons/not-a-uuid/archive`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(400);
+  });
 });

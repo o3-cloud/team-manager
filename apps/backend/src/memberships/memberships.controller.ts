@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -24,7 +24,7 @@ export class MembershipsController {
   @TeamRoles(...MANAGE_TEAM_ROLES)
   updateRole(
     @Param('teamId') teamId: string,
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
     @Body() dto: UpdateRoleDto,
     @Req() req: Request & TeamScopedRequest,
     @CurrentUser() actor: UserEntity,

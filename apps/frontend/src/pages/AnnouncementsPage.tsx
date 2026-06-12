@@ -3,11 +3,15 @@ import { Link, useParams } from 'react-router-dom';
 import { canWrite, useTeamRole } from '../hooks/useTeamRole';
 import { api } from '../lib/api';
 
+type AnnouncementAudience = 'ALL' | 'PLAYERS' | 'PARENTS';
+
 interface Announcement {
   id: string;
   title: string;
   body: string;
   pinned: boolean;
+  targetAudience: AnnouncementAudience;
+  urgent: boolean;
   createdAt: string;
 }
 
@@ -18,6 +22,8 @@ export default function AnnouncementsPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [pinned, setPinned] = useState(false);
+  const [targetAudience, setTargetAudience] = useState<AnnouncementAudience>('ALL');
+  const [urgent, setUrgent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -38,6 +44,8 @@ export default function AnnouncementsPage() {
         title,
         body,
         pinned,
+        targetAudience,
+        urgent,
       });
       setAnnouncements((prev) => {
         const next = [created, ...prev];
@@ -46,6 +54,8 @@ export default function AnnouncementsPage() {
       setTitle('');
       setBody('');
       setPinned(false);
+      setTargetAudience('ALL');
+      setUrgent(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to post announcement');
     } finally {
@@ -95,15 +105,38 @@ export default function AnnouncementsPage() {
               onChange={(e) => setBody(e.target.value)}
               required
             />
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm"
-                checked={pinned}
-                onChange={(e) => setPinned(e.target.checked)}
-              />
-              <span className="text-sm">Pin this announcement</span>
-            </label>
+            <div className="flex flex-wrap gap-4 items-center">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm"
+                  checked={pinned}
+                  onChange={(e) => setPinned(e.target.checked)}
+                />
+                <span className="text-sm">Pin</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm checkbox-warning"
+                  checked={urgent}
+                  onChange={(e) => setUrgent(e.target.checked)}
+                />
+                <span className="text-sm">Urgent</span>
+              </label>
+              <label className="flex items-center gap-2 select-none">
+                <span className="text-sm">Audience:</span>
+                <select
+                  className="select select-bordered select-sm"
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value as AnnouncementAudience)}
+                >
+                  <option value="ALL">Everyone</option>
+                  <option value="PLAYERS">Players only</option>
+                  <option value="PARENTS">Parents only</option>
+                </select>
+              </label>
+            </div>
             {error && <div className="alert alert-error text-sm">{error}</div>}
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? <span className="loading loading-spinner loading-sm" /> : 'Post'}
@@ -123,6 +156,10 @@ export default function AnnouncementsPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold">{a.title}</span>
                     {a.pinned && <span className="badge badge-accent badge-sm">Pinned</span>}
+                    {a.urgent && <span className="badge badge-warning badge-sm">Urgent</span>}
+                    <span className="badge badge-ghost badge-sm">
+                      {a.targetAudience === 'PLAYERS' ? 'Players only' : a.targetAudience === 'PARENTS' ? 'Parents only' : 'Everyone'}
+                    </span>
                   </div>
                   {canWrite(role) && (
                     <button

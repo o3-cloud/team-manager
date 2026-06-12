@@ -23,8 +23,10 @@ allowed-tools:
 ## Inputs
 
 The run slug in `$ARGUMENTS`, else the most recent in-progress run. Read `contract.md`,
-`state.md`, `01-requirements-brief.md`, and the relevant context packs (03 system
-context, 04 domain rules).
+`state.md`, `01-requirements-brief.md`, and context packs 03 (system context) and
+04 (domain rules). For each pack, prefer `.claude/sdlc/<NN>-<name>.md` (project
+override) if the file exists; otherwise fall back to
+`.claude/skills/sdlc-knowledge/reference/context-packs/<NN>-<name>.md`.
 
 ## Workflow
 

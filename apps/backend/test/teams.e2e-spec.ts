@@ -157,7 +157,7 @@ describe('BDR-002: Team Creation (e2e)', () => {
   // Scenario 10 — Non-existent team UUID returns 404 (AC-1.1, F-1)
   it('returns 404 for a non-existent team UUID', async () => {
     await request(app.getHttpServer())
-      .get('/teams/00000000-0000-0000-0000-000000000000')
+      .get('/teams/00000000-0000-4000-8000-000000000001')
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });
@@ -177,6 +177,22 @@ describe('BDR-002: Team Creation (e2e)', () => {
       .post('/teams')
       .set('Authorization', `Bearer ${token}`)
       .send({ name: "'; DROP TABLE teams; --" })
+      .expect(400);
+  });
+
+  // Scenario 13 — Malformed UUID on GET /teams/:teamId returns 400 (AC-1, BL-1)
+  it('returns 400 for malformed UUID on GET /teams/:teamId', async () => {
+    await request(app.getHttpServer())
+      .get('/teams/not-a-uuid')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+  });
+
+  // Scenario 14 — Malformed teamId on sub-route returns 400 (AC-5, BL-1 guard fix)
+  it('returns 400 for malformed teamId on GET /teams/:teamId/members', async () => {
+    await request(app.getHttpServer())
+      .get('/teams/not-a-uuid/members')
+      .set('Authorization', `Bearer ${token}`)
       .expect(400);
   });
 });

@@ -23,8 +23,9 @@ allowed-tools:
 ## Inputs
 
 The run slug in `$ARGUMENTS`, else the most recent in-progress run. Read `contract.md`,
-`state.md`, and artifacts `01`–`03`. Load engineering-standards context
-(`.claude/skills/sdlc-knowledge/reference/context-packs/02`, and the matching `.claude/skills/sdlc-knowledge/reference/context-packs/starters/`).
+`state.md`, and artifacts `01`–`03`. Load context pack 02 (engineering standards): prefer `.claude/sdlc/02-engineering-standards.md`
+if it exists; otherwise fall back to `.claude/skills/sdlc-knowledge/reference/context-packs/02-engineering-standards.md`.
+Also load the matching `.claude/skills/sdlc-knowledge/reference/context-packs/starters/` templates.
 
 ## Workflow
 

@@ -35,7 +35,7 @@ export class RecurringEventsService {
       throw new UnprocessableEntityException('No active season for this team');
     }
 
-    const endDate = new Date(dto.endDate);
+    const endDate = new Date(`${dto.endDate}T23:59:59.999Z`);
     const maxEnd = new Date();
     maxEnd.setFullYear(maxEnd.getFullYear() + MAX_SERIES_YEARS);
     if (endDate > maxEnd) {

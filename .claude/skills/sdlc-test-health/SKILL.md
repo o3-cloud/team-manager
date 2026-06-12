@@ -1,7 +1,7 @@
 ---
-name: sdlc:test-quality
+name: sdlc:test-health
 description: Run a multi-tool test quality assessment of a project — test density, mutation score, flakiness, order-dependence, and test smells — and consolidate findings into a single report. Trigger when the user asks for a test quality scan, mutation testing report, flaky test audit, test suite health check, or wants to know how strong the existing test suite actually is.
-when_to_use: Use to produce a standalone test quality posture report for a project, or as a complement to the sdlc:5-test gate when assessing whether the test suite would actually catch regressions. Detects which test frameworks are present, activates only the applicable analyzers from the installed OSS toolset, runs them in parallel, and writes a single `test-quality-report.md` to the target directory. Do not use as a substitute for the sdlc:5-test gate's functional validation (that runs the tests) or for the sdlc:code-quality gate's complexity/maintainability scan.
+when_to_use: Use to produce a standalone test quality posture report for a project, or as a complement to the sdlc:5-test gate when assessing whether the test suite would actually catch regressions. Detects which test frameworks are present, activates only the applicable analyzers from the installed OSS toolset, runs them in parallel, and writes a single `test-quality-report.md` to the target directory. Do not use as a substitute for the sdlc:5-test gate's functional validation (that runs the tests) or for the sdlc:code-health gate's complexity/maintainability scan.
 argument-hint: "<target-path> [--focus density|mutation|flakiness|smells|all] [--diff] [--run-mutation]"
 arguments:
   - target

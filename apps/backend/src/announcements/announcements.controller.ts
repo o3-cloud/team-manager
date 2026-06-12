@@ -30,8 +30,8 @@ export class AnnouncementsController {
   }
 
   @Get()
-  findAll(@Param('teamId', ParseUUIDPipe) teamId: string) {
-    return this.announcementsService.findByTeam(teamId);
+  findAll(@Param('teamId', ParseUUIDPipe) teamId: string, @Req() req: TeamScopedRequest) {
+    return this.announcementsService.findByTeam(teamId, req.teamRole!);
   }
 
   @Delete(':id')

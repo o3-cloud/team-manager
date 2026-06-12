@@ -10,7 +10,21 @@ export enum TeamRole {
 export const WRITE_EVENT_ROLES = [TeamRole.COACH, TeamRole.ASSISTANT_COACH, TeamRole.TEAM_MANAGER];
 export const WRITE_ROSTER_ROLES = [TeamRole.COACH, TeamRole.ASSISTANT_COACH];
 export const MANAGE_TEAM_ROLES = [TeamRole.COACH];
-export const RECORD_ATTENDANCE_ROLES = [TeamRole.COACH, TeamRole.ASSISTANT_COACH, TeamRole.TEAM_MANAGER, TeamRole.SCOREKEEPER];
-export const RECORD_RESULT_ROLES = [TeamRole.COACH, TeamRole.ASSISTANT_COACH, TeamRole.TEAM_MANAGER, TeamRole.SCOREKEEPER];
-export const SEND_ANNOUNCEMENT_ROLES = [TeamRole.COACH, TeamRole.ASSISTANT_COACH, TeamRole.TEAM_MANAGER];
+export const RECORD_ATTENDANCE_ROLES = [
+  TeamRole.COACH,
+  TeamRole.ASSISTANT_COACH,
+  TeamRole.TEAM_MANAGER,
+  TeamRole.SCOREKEEPER,
+];
+export const RECORD_RESULT_ROLES = [
+  TeamRole.COACH,
+  TeamRole.ASSISTANT_COACH,
+  TeamRole.TEAM_MANAGER,
+  TeamRole.SCOREKEEPER,
+];
+export const SEND_ANNOUNCEMENT_ROLES = [
+  TeamRole.COACH,
+  TeamRole.ASSISTANT_COACH,
+  TeamRole.TEAM_MANAGER,
+];
 export const ALL_MEMBER_ROLES = Object.values(TeamRole);

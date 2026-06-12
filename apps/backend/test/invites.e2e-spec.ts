@@ -171,6 +171,22 @@ describe('BDR-012: Team Joining / Invitations (e2e)', () => {
     expect(second.body.status).toBe('REVOKED');
   });
 
+  // BL-1 — Malformed inviteId on DELETE returns 400 (AC-6)
+  it('returns 400 for malformed inviteId on DELETE /teams/:teamId/invites/:inviteId', async () => {
+    await request(app.getHttpServer())
+      .delete(`/teams/${teamId}/invites/not-a-uuid`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(400);
+  });
+
+  // BL-1 — Malformed teamId on DELETE returns 400 (AC-5, guard fix)
+  it('returns 400 for malformed teamId on DELETE /teams/:teamId/invites/:inviteId', async () => {
+    await request(app.getHttpServer())
+      .delete('/teams/not-a-uuid/invites/00000000-0000-4000-8000-000000000001')
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(400);
+  });
+
   // AC-5.2 — Revoking an ACCEPTED invite still returns 409 (unchanged)
   it('revoking an already-accepted invite returns 409', async () => {
     const r7 = await request(app.getHttpServer())

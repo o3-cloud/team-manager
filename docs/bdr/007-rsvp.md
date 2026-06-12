@@ -15,7 +15,7 @@ Coaches need to know how many players will show up to plan practices and game li
 ## Acceptance Criteria
 
 1. A player can submit an RSVP of Going, Not Going, or Maybe for a team event, and that response is stored and retrievable.
-2. A parent can submit an RSVP on behalf of a linked player for a team event.
+2. A parent can submit an RSVP on behalf of a linked player for a team event, provided that player has a registered user account. A roster entry without a linked user account cannot receive an RSVP; the parent RSVP UI must exclude such entries from the player selector.
 3. Submitting a new RSVP for an event a user has already responded to replaces the previous response; only the latest response is retained.
 4. A coach/admin can retrieve a list of all RSVP responses for an event, including the responder identity, player name, and status.
 5. Team members who have not responded to an event are identifiable as non-respondents in the coach's RSVP view.
@@ -28,9 +28,14 @@ Coaches need to know how many players will show up to plan practices and game li
 - Then the RSVP for that player on that event is returned as "Going"
 
 **Scenario 2 — Parent RSVPs for player**
-- Given a parent linked to a player and a scheduled event
+- Given a parent linked to a player who has a registered user account and a scheduled event
 - When the parent submits an RSVP of "Not Going" for their player
 - Then the player's RSVP on that event is stored as "Not Going"
+
+**Scenario 2b — Parent's linked player has no user account**
+- Given a parent linked to a roster entry that has no registered user account
+- When the parent views the RSVP section for an event
+- Then that roster entry does not appear in the player selector and cannot be RSVPed for
 
 **Scenario 3 — RSVP update replaces previous**
 - Given a player who previously RSVPed "Going" to an event

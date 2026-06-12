@@ -17,3 +17,4 @@ apps/frontend/storybook-static
 k8s/secrets.yaml
 packages/ui/src/storybook-static
 .sdlc
+packages/ui/storybook-static

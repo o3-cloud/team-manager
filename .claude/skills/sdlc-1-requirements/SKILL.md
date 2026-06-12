@@ -22,8 +22,10 @@ allowed-tools:
 ## Inputs
 
 The run slug in `$ARGUMENTS`, else the most recent in-progress run under `.sdlc/runs/`.
-Read `contract.md`, `state.md`, and load the relevant context packs (`.claude/skills/sdlc-knowledge/reference/context-packs/`
-01, 02, 03, 04, 05). Do not ask the human for anything a context pack already answers.
+Read `contract.md`, `state.md`, and load context packs 01, 02, 03, 04, 05.
+For each pack, prefer `.claude/sdlc/<NN>-<name>.md` (project override) if the file
+exists; otherwise fall back to `.claude/skills/sdlc-knowledge/reference/context-packs/<NN>-<name>.md`.
+Do not ask the human for anything a context pack already answers.
 
 ## Workflow
 

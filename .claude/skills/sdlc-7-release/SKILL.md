@@ -22,8 +22,9 @@ allowed-tools:
 ## Inputs
 
 The run slug in `$ARGUMENTS`, else the most recent in-progress run. Read `contract.md`,
-`state.md`, and artifacts `01`–`06`. Load the release-governance and operational
-context packs (`.claude/skills/sdlc-knowledge/reference/context-packs/08`, `09`).
+`state.md`, and artifacts `01`–`06`. Load context packs 08 (operational readiness) and 09 (release governance): for each,
+prefer `.claude/sdlc/<NN>-<name>.md` (project override) if the file exists; otherwise
+fall back to `.claude/skills/sdlc-knowledge/reference/context-packs/<NN>-<name>.md`.
 
 ## Workflow
 

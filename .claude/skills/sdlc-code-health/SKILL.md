@@ -1,5 +1,5 @@
 ---
-name: sdlc:code-quality
+name: sdlc:code-health
 description: Run a multi-tool code quality assessment of a project — complexity, maintainability, duplication, and language-specific code smells — and consolidate findings into a single report. Trigger when the user asks for a code quality scan, complexity audit, maintainability report, duplication check, or wants to know which parts of a codebase are the riskiest to maintain.
 when_to_use: Use to produce a standalone code quality posture report for a project, or as a complement to the sdlc:5-test gate when assessing maintainability. Detects which languages are present, activates only the applicable analyzers from the installed OSS toolset, runs them in parallel, and writes a single `code-quality-report.md` to the target directory. Do not use as a substitute for the sdlc:6-security gate (that is sdlc:secops) or for runtime profiling.
 argument-hint: "<target-path> [--focus size|complexity|duplication|smells|all] [--diff]"

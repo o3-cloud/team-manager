@@ -85,3 +85,11 @@
 - Parent may RSVP on behalf of linked Players; the RSVP records the acting Member.
 - Version mismatch on Event PATCH returns HTTP 409 — client must re-fetch before retrying.
 - Reminder window timing is an open question (not yet specified in any BDR).
+
+## Implementation gotchas (learned 2026-05-28)
+
+- **ParentPlayerLink → userId join is indirect.** `ParentPlayerLinkEntity` stores `parentUserId → rosterEntryId`, NOT `parentUserId → userId`. To verify that a parent's linked player has a given `userId`, you must JOIN `RosterEntryEntity`: `innerJoin(RosterEntryEntity, 're', 're.id = l.rosterEntryId AND re.userId = :targetId')`. A direct `findOneBy({ parentUserId })` only confirms a link exists; it does NOT verify the target user — this is an IDOR.
+- **`RosterEntryEntity.userId` is nullable.** A RosterEntry can exist without a User account. Any query joining on `re.userId` must be aware this may be null; an INNER JOIN naturally excludes unlinked entries.
+- **Health endpoint path.** NestJS Terminus registers `/health` before the global API prefix is applied, so the health endpoint is at `/health`, not `/api/health`, even when `app.setGlobalPrefix('api')` is set.
+- **RSVP endpoint is PUT.** `RsvpController` uses `@Put(':eventId')` — not POST. Use `-X PUT` in curl-based smoke tests.
+- **RecurringEvent `endDate` is inclusive.** When comparing RRule-generated occurrence dates against `endDate`, parse `endDate` as end-of-day (`T23:59:59.999Z`) so occurrences that fall ON the boundary date are included. The default ISO date parse is midnight (start of day), which makes the boundary exclusive.

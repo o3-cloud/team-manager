@@ -24,8 +24,8 @@ allowed-tools:
 ## Inputs
 
 The run slug in `$ARGUMENTS`, else the most recent in-progress run. Read `contract.md`,
-`state.md`, and artifacts `01`–`05`. Load the security/privacy context pack
-(`.claude/skills/sdlc-knowledge/reference/context-packs/07`).
+`state.md`, and artifacts `01`–`05`. Load context pack 07 (security/privacy): prefer `.claude/sdlc/07-security-privacy.md`
+if it exists; otherwise fall back to `.claude/skills/sdlc-knowledge/reference/context-packs/07-security-privacy.md`.
 
 ## Workflow
 

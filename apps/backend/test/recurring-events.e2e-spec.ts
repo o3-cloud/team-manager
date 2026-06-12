@@ -230,6 +230,27 @@ describe('BDR-006: Recurring Events (e2e)', () => {
     expect(third.status).toBe('SCHEDULED');
   });
 
+  // FR-5b — endDate exactly equals last occurrence date → all COUNT instances created
+  it('COUNT=4 series with endDate = last-occurrence date produces exactly 4 instances (FR-5b)', async () => {
+    // Weekly starting 2027-12-06 (Mon), COUNT=4 → Dec 6, 13, 20, 27
+    // endDate = '2027-12-27' (the 4th occurrence's date)
+    const res = await request(app.getHttpServer())
+      .post(`/teams/${teamId}/recurring-events`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({
+        title: 'Boundary Test',
+        type: 'PRACTICE',
+        rruleString: 'FREQ=WEEKLY;COUNT=4',
+        firstStartsAt: '2027-12-06T10:00:00Z',
+        endDate: '2027-12-27',
+      })
+      .expect(201);
+
+    // Without the endDate fix, the 4th occurrence (Dec 27 @ 10:00) would be excluded
+    // by rule.between(..., new Date('2027-12-27'), true) = midnight, returning only 3.
+    expect(res.body.instances.length).toBe(4);
+  });
+
   // BDR-006 — Invalid rrule string returns 400
   it('creating a series with an invalid rrule string returns 400', async () => {
     await request(app.getHttpServer())

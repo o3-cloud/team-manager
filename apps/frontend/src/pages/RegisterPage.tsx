@@ -15,6 +15,10 @@ export default function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
     setLoading(true);
     try {
       await register(email, displayName, password);
@@ -40,6 +44,7 @@ export default function RegisterPage() {
                 className="input input-bordered"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                autoComplete="name"
                 required
               />
             </label>
@@ -50,6 +55,7 @@ export default function RegisterPage() {
                 className="input input-bordered"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </label>
@@ -60,8 +66,8 @@ export default function RegisterPage() {
                 className="input input-bordered"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 required
-                minLength={8}
               />
             </label>
             <button type="submit" className="btn btn-primary" disabled={loading}>

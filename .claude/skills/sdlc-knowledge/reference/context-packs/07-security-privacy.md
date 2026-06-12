@@ -183,6 +183,101 @@ useLayoutEffect(() => {
 
 ---
 
+### JWT strategy dual-fallback anti-pattern
+
+NestJS `JwtModule.registerAsync` and `JwtStrategy` are configured independently. Both
+often have their own `secret` field with a fallback. If you fix the fallback in one place,
+the other silently continues using a hardcoded secret. Always audit BOTH locations:
+
+1. `configuration.ts` (or equivalent config factory) — `process.env.JWT_SECRET ?? 'fallback'`
+2. `jwt.strategy.ts` — `secretOrKey: process.env.JWT_SECRET ?? 'fallback-in-strategy'`
+
+**Pattern:** derive the secret in exactly one place (the config factory) and inject it via
+`ConfigService` everywhere else. Neither `JwtModule.registerAsync` nor `JwtStrategy`
+should have a literal string fallback — both should throw at startup if the env var is unset.
+
+```typescript
+// jwt.strategy.ts — correct pattern
+constructor(private readonly configService: ConfigService) {
+  super({
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: configService.get<string>('jwt.secret'), // throws if undefined in strict mode
+  });
+}
+```
+
+> Added: api-contract-fixes run, 2026-05-27. SEC-2 finding — second JWT fallback in jwt.strategy.ts.
+
+---
+
+### `ParseUUIDPipe` on all route UUID params
+
+Never pass a raw `:id` string parameter to `TypeORM findOne` without first validating
+it is a valid UUID. An invalid format causes Postgres to throw an unhandled query error
+that surfaces as HTTP 500.
+
+```typescript
+// Correct — validate before the service layer is reached
+@Get(':id')
+findOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+  return this.teamsService.findOne(id, req.user.id);
+}
+```
+
+This applies to every route param that ends up in a UUID column lookup: `:teamId`,
+`:inviteId`, `:eventId`, etc.
+
+> Added: api-contract-fixes run, 2026-05-27. H-1 simulation finding — `GET /teams/not-a-uuid` returned 500.
+
+---
+
+### Swagger UI — NODE_ENV guard
+
+Expose Swagger UI only in non-production environments:
+
+```typescript
+if (process.env.NODE_ENV !== 'production') {
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+}
+```
+
+Without this guard, the full API schema (all routes, request/response shapes, auth scheme)
+is discoverable by unauthenticated visitors in production. Pre-existing finding (SEC-5).
+
+> Added: api-contract-fixes run, 2026-05-27. SEC-5 finding — Swagger unconditionally exposed.
+
+---
+
+### kindnet NetworkPolicy — host→pod traffic bypasses enforcement
+
+On Docker Desktop's kindnet CNI (the default for local k8s development), `kubectl port-forward` is served through the **kubelet host network path**, not pod-to-pod. NetworkPolicy rules do **not** apply to host→pod traffic on kindnet.
+
+**Consequence:** a `deny-all` egress NetworkPolicy that blocks all pod-originated traffic will still allow `kubectl port-forward` to the pod — the port-forward session originates from the kubelet, not from another pod. This is a CNI behavior, not a policy gap.
+
+**Corollary:** for production CNIs (Cilium, Calico, WeaveNet), host→pod behavior depends on the specific CNI's `hostNetwork` and `kubelet` exemption rules. Verify explicitly before assuming port-forward is always exempt.
+
+> Added: otel-k8s-hardening run, 2026-05-27. Confirmed via live NetworkPolicy validation (R-6).
+
+---
+
+### GitHub Actions SHA pinning — reference SHA table
+
+When SHA-pinning GitHub Actions in a CI workflow, pin all `uses:` lines to 40-character commit SHAs with inline version comments. Floating tags (`@v4`, `@v3`) allow compromised upstream repositories to serve malicious code.
+
+**Pattern:**
+```yaml
+- uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+```
+
+**Verify SHAs** via `git ls-remote https://github.com/<owner>/<repo> refs/tags/<version>` — the SHA must be a commit object, not a tag object.
+
+**Caveat:** `persist-credentials: false` should accompany every `actions/checkout` step to prevent GITHUB_TOKEN from being stored in the git credential helper after checkout. With workflow-level `contents: read`, the practical risk is low but the defence-in-depth is cheap.
+
+> Added: otel-k8s-hardening run, 2026-05-27. Resolved finding G-3 from security-hardening.
+
+---
+
 ### Timing-safe auth: dummy bcrypt pattern
 
 When a login path has a "user not found" fast-exit, an attacker can enumerate valid

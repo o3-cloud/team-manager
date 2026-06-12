@@ -1,5 +1,5 @@
 import { type ReactElement, useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
@@ -141,6 +141,7 @@ const NAV_ITEMS: NavItem[] = [
 export function AppLayout() {
   const { teamId } = useParams<{ teamId: string }>();
   const { user, logout } = useAuth();
+  const location = useLocation();
   const [teamName, setTeamName] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
@@ -161,7 +162,7 @@ export function AppLayout() {
       .get<Notification[]>(`/teams/${teamId}/notifications`)
       .then((items) => setUnreadCount(items.filter((n) => !n.isRead).length))
       .catch(() => setUnreadCount(0));
-  }, [teamId]);
+  }, [teamId, location.pathname]);
 
   function closeDrawer() {
     const toggle = document.getElementById('app-drawer-toggle') as HTMLInputElement | null;

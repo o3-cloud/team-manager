@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext, useState } from 'react';
+import { clearAllRoleCaches } from '../hooks/useTeamRole';
 import { api, clearToken, getToken, setToken } from '../lib/api';
 
 interface User {
@@ -20,10 +21,24 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function decodeUser(token: string): User | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload.sub || !payload.email) return null;
+    return {
+      id: payload.sub,
+      email: payload.email,
+      displayName: payload.displayName ?? payload.email,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() => {
     const token = getToken();
-    return { user: null, token };
+    return { user: token ? decodeUser(token) : null, token };
   });
 
   async function register(email: string, displayName: string, password: string) {
@@ -47,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     clearToken();
+    clearAllRoleCaches();
     setState({ user: null, token: null });
   }
 

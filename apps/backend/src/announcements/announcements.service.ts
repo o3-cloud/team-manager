@@ -5,16 +5,24 @@ import { Repository } from 'typeorm';
 import { TeamRole } from '../common/enums/team-role.enum';
 import { MembershipEntity } from '../memberships/entities/membership.entity';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
-import { AnnouncementEntity } from './entities/announcement.entity';
+import { AnnouncementAudience, AnnouncementEntity } from './entities/announcement.entity';
 
 export class AnnouncementPostedEvent {
   constructor(
     public readonly announcementId: string,
     public readonly teamId: string,
+    public readonly targetAudience: AnnouncementAudience,
   ) {}
 }
 
 const POST_ROLES = [TeamRole.COACH, TeamRole.ASSISTANT_COACH, TeamRole.TEAM_MANAGER];
+
+const VIEW_ALL_ROLES = [
+  TeamRole.COACH,
+  TeamRole.ASSISTANT_COACH,
+  TeamRole.TEAM_MANAGER,
+  TeamRole.SCOREKEEPER,
+];
 
 @Injectable()
 export class AnnouncementsService {
@@ -36,28 +44,43 @@ export class AnnouncementsService {
       throw new ForbiddenException('Insufficient role to post announcements');
     }
 
+    const targetAudience = dto.targetAudience ?? AnnouncementAudience.ALL;
+
     const announcement = this.announcementRepo.create({
       teamId,
       authorId,
       title: dto.title,
       body: dto.body,
       pinned: dto.pinned ?? false,
+      targetAudience,
+      urgent: dto.urgent ?? false,
     });
     await this.announcementRepo.save(announcement);
 
     this.eventEmitter.emit(
       'announcement.posted',
-      new AnnouncementPostedEvent(announcement.id, teamId),
+      new AnnouncementPostedEvent(announcement.id, teamId, targetAudience),
     );
 
     return announcement;
   }
 
-  async findByTeam(teamId: string): Promise<AnnouncementEntity[]> {
-    return this.announcementRepo.find({
-      where: { teamId },
-      order: { pinned: 'DESC', createdAt: 'DESC' },
-    });
+  async findByTeam(teamId: string, callerRole: TeamRole): Promise<AnnouncementEntity[]> {
+    const qb = this.announcementRepo
+      .createQueryBuilder('a')
+      .where('a.teamId = :teamId', { teamId })
+      .orderBy('a.pinned', 'DESC')
+      .addOrderBy('a.createdAt', 'DESC');
+
+    if (!VIEW_ALL_ROLES.includes(callerRole)) {
+      const audiences =
+        callerRole === TeamRole.PLAYER
+          ? [AnnouncementAudience.ALL, AnnouncementAudience.PLAYERS]
+          : [AnnouncementAudience.ALL, AnnouncementAudience.PARENTS];
+      qb.andWhere('a.targetAudience IN (:...audiences)', { audiences });
+    }
+
+    return qb.getMany();
   }
 
   async delete(teamId: string, id: string, actorRole: TeamRole): Promise<void> {

@@ -41,6 +41,7 @@ export default function LoginPage() {
                 className="input input-bordered"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </label>
@@ -51,6 +52,7 @@ export default function LoginPage() {
                 className="input input-bordered"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
               />
             </label>

@@ -105,8 +105,8 @@ L→`7-release`, P→`8-validation`, G→`9-learning`):
 
 - The prime directive: never skip from intent to code. Every gate produces its artifact
   before the next begins; never claim a gate passed without its artifact on disk.
-- The human's stated Authority overrides the change class's default level — it may add
-  rigor or lower autonomy, never raise it without explicit approval.
+- The human's stated Authority overrides the change class's default level in either
+  direction — the human operator may raise or lower the level as they see fit.
 - Keep your own context lean: delegate heavy gates to subagents and rely on `state.md`
   and the numbered artifacts as the shared memory between gates.
 - Record every escalation, approval, and autonomous completion in `state.md` so higher

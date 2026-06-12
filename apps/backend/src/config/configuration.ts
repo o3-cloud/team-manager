@@ -5,7 +5,11 @@ export const configuration = () => ({
       process.env['DATABASE_URL'] ?? 'postgres://team-manager:password@localhost:5432/team-manager',
   },
   jwt: {
-    secret: process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+    secret: (() => {
+      const s = process.env.JWT_SECRET;
+      if (!s) throw new Error('JWT_SECRET environment variable is required');
+      return s;
+    })(),
     expiresIn: process.env['JWT_EXPIRES_IN'] ?? '7d',
   },
   otel: {

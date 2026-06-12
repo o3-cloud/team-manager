@@ -58,11 +58,20 @@ role within that team.
 - Notifications are per-Member, not shared.
 - `GameResult` may only be recorded for `GAME`-type Events.
 
+## TypeORM DataSource patterns
+
+- **Global entity registration:** `UserEntity` (and all other entities) are registered in the global TypeORM DataSource via `DatabaseModule.forRootAsync` (`apps/backend/src/database/database.module.ts:28`). A module's QueryBuilder can `leftJoin(UserEntity, 'u', ...)` without adding `UserEntity` to that module's `TypeOrmModule.forFeature` array — the DataSource covers all registered entities.
+- **forFeature is for injection only:** `TypeOrmModule.forFeature([EntityX])` is required only when a module's class needs `@InjectRepository(EntityX)`. For a raw QueryBuilder JOIN against an entity from another module, no `forFeature` change is needed.
+- **Projection pattern:** Use `createQueryBuilder().select().addSelect().getRawMany<T>()` with an explicit typed DTO when joining across entities and selecting a whitelist of columns. Do NOT use `findOne`/`findBy` + manual JOIN — TypeORM's QueryBuilder is the correct tool.
+
 ## Known technical debt
 
 - Throttle store is in-memory per pod; multi-replica deployments need Redis store.
 - Reminder window for event notifications not yet specified (open question in notification-delivery policy).
 - `packages/ui` is a minimal stub (only `Button` and `Card` exported).
+- `RosterEntryEntity` has no `@UpdateDateColumn` — clients cannot determine when an entry was last modified (TD-2, team-core).
+- `GET /teams/:id/roster/:entryId` not implemented — clients must fetch the full roster to inspect a single entry (TD-3, team-core).
+- Playwright E2E not run in k8s CI/dev environment (no headless display); frontend flows unverified end-to-end (TD-4, team-core).
 
 ## Ownership
 

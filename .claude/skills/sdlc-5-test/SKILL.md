@@ -23,8 +23,8 @@ allowed-tools:
 ## Inputs
 
 The run slug in `$ARGUMENTS`, else the most recent in-progress run. Read `contract.md`,
-`state.md`, and artifacts `01`–`04`. Load the test-strategy context pack
-(`.claude/skills/sdlc-knowledge/reference/context-packs/06`).
+`state.md`, and artifacts `01`–`04`. Load context pack 06 (test strategy): prefer `.claude/sdlc/06-test-strategy.md`
+if it exists; otherwise fall back to `.claude/skills/sdlc-knowledge/reference/context-packs/06-test-strategy.md`.
 
 ## Workflow
 

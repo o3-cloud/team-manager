@@ -40,7 +40,7 @@ The run slug in `$ARGUMENTS`, else the most recent run awaiting this gate. Read
 4. Log **defects discovered** (severity, root cause, owner, resolution) and **technical
    debt** taken on (shortcuts, deferred cleanup, test/doc gaps).
 5. **Fold lessons back into the framework** — the core of this gate. Concretely update:
-   - `.claude/skills/sdlc-knowledge/reference/context-packs/` — new patterns, constraints, domain rules, edge cases.
+   - `.claude/sdlc/` — new patterns, constraints, domain rules, edge cases. This is the project override layer; gate skills prefer these files over the base packs.
    - `.claude/skills/sdlc-knowledge/reference/autonomy/escalation-policy.md` — new triggers learned from a near-miss.
    - the risk model / `.claude/skills/sdlc-knowledge/reference/quality-gates/` — gates that should be tighter or lighter.
    - `.claude/skills/sdlc-knowledge/reference/agent/change-classes.md` — a class boundary that proved wrong.

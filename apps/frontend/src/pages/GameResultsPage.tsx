@@ -14,22 +14,29 @@ interface SeasonRecord {
   ties: number;
 }
 
-interface Event {
+interface GameEvent {
   id: string;
   title: string;
   type: string;
   startsAt: string;
 }
 
+interface GameResult {
+  ownScore: number;
+  oppScore: number;
+  outcome: 'WIN' | 'LOSS' | 'TIE';
+  notes: string | null;
+}
+
 export default function GameResultsPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [record, setRecord] = useState<SeasonRecord | null>(null);
-  const [gameEvents, setGameEvents] = useState<Event[]>([]);
+  const [gameEvents, setGameEvents] = useState<GameEvent[]>([]);
+  const [gameResults, setGameResults] = useState<Record<string, GameResult>>({});
   const [error, setError] = useState('');
   const [seasonLoading, setSeasonLoading] = useState(true);
 
-  // Record result form state
   const [selectedEventId, setSelectedEventId] = useState('');
   const [ownScore, setOwnScore] = useState('');
   const [oppScore, setOppScore] = useState('');
@@ -51,15 +58,33 @@ export default function GameResultsPage() {
           setRecord(rec);
         }
 
-        const events = await api.get<Event[]>(`/teams/${teamId}/events`);
-        setGameEvents(events.filter((e) => e.type === 'GAME'));
+        const events = await api.get<GameEvent[]>(`/teams/${teamId}/events`);
+        const games = events.filter((e) => e.type === 'GAME');
+        setGameEvents(games);
+
+        const now = new Date().toISOString();
+        const pastGames = games.filter((e) => e.startsAt < now);
+        const settled = await Promise.allSettled(
+          pastGames.map((e) =>
+            api
+              .get<GameResult>(`/teams/${teamId}/events/${e.id}/game-result`)
+              .then((r) => [e.id, r] as [string, GameResult])
+          )
+        );
+        const resultMap: Record<string, GameResult> = {};
+        for (const r of settled) {
+          if (r.status === 'fulfilled') {
+            const [id, result] = r.value;
+            resultMap[id] = result;
+          }
+        }
+        setGameResults(resultMap);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setSeasonLoading(false);
       }
     }
-
     load();
   }, [teamId]);
 
@@ -76,7 +101,11 @@ export default function GameResultsPage() {
         oppScore: Number(oppScore),
         notes: notes.trim() || undefined,
       });
-      setFormSuccess('Result recorded successfully.');
+      const updated = await api.get<GameResult>(
+        `/teams/${teamId}/events/${selectedEventId}/game-result`
+      );
+      setGameResults((prev) => ({ ...prev, [selectedEventId]: updated }));
+      setFormSuccess('Result recorded.');
       setSelectedEventId('');
       setOwnScore('');
       setOppScore('');
@@ -88,12 +117,21 @@ export default function GameResultsPage() {
     }
   }
 
+  const now = new Date().toISOString();
+  const recordableGames = gameEvents.filter((e) => e.startsAt < now && !gameResults[e.id]);
+
+  function outcomeBadge(outcome: GameResult['outcome']) {
+    if (outcome === 'WIN') return <span className="badge badge-success badge-sm">WIN</span>;
+    if (outcome === 'LOSS') return <span className="badge badge-error badge-sm">LOSS</span>;
+    return <span className="badge badge-warning badge-sm">TIE</span>;
+  }
+
   return (
     <div className="min-h-screen bg-base-200 p-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Game Results</h1>
-          <Link to={`/teams/${teamId}`} className="btn btn-sm btn-ghost">
+          <Link to={`/teams/${teamId}/dashboard`} className="btn btn-sm btn-ghost">
             ← Back
           </Link>
         </header>
@@ -144,88 +182,118 @@ export default function GameResultsPage() {
                 <p className="opacity-60 text-sm">No game events scheduled.</p>
               ) : (
                 <ul className="space-y-2">
-                  {gameEvents.map((ev) => (
-                    <li key={ev.id}>
-                      <Link
-                        to={`/teams/${teamId}/events/${ev.id}`}
-                        className="flex items-center justify-between p-3 rounded-lg border border-base-300 hover:bg-base-200 transition-colors"
-                      >
-                        <span className="font-medium">{ev.title}</span>
-                        <span className="text-xs opacity-50">
-                          {new Date(ev.startsAt).toLocaleString()}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
+                  {gameEvents.map((ev) => {
+                    const result = gameResults[ev.id];
+                    const isPast = ev.startsAt < now;
+                    return (
+                      <li key={ev.id}>
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-base-300">
+                          <div>
+                            <p className="font-medium">{ev.title}</p>
+                            <p className="text-xs opacity-50">
+                              {new Date(ev.startsAt).toLocaleDateString(undefined, {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </p>
+                          </div>
+                          {result ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-mono font-semibold">
+                                {result.ownScore}–{result.oppScore}
+                              </span>
+                              {outcomeBadge(result.outcome)}
+                            </div>
+                          ) : isPast ? (
+                            <span className="badge badge-ghost badge-sm">No result</span>
+                          ) : (
+                            <span className="badge badge-outline badge-sm">Upcoming</span>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
 
             {/* Record result form */}
-            {activeSeason && gameEvents.length > 0 && (
-              <form onSubmit={handleRecordResult} className="card bg-base-100 shadow p-5 space-y-3">
+            {activeSeason && (
+              <div className="card bg-base-100 shadow p-5 space-y-3">
                 <h2 className="font-semibold text-lg">Record Result</h2>
-
-                <select
-                  className="select select-bordered w-full"
-                  value={selectedEventId}
-                  onChange={(e) => setSelectedEventId(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>
-                    Select game event…
-                  </option>
-                  {gameEvents.map((ev) => (
-                    <option key={ev.id} value={ev.id}>
-                      {ev.title} — {new Date(ev.startsAt).toLocaleDateString()}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="flex gap-3">
-                  <label className="flex-1 space-y-1">
-                    <span className="text-sm font-medium">Our score</span>
-                    <input
-                      type="number"
-                      className="input input-bordered w-full"
-                      min={0}
-                      value={ownScore}
-                      onChange={(e) => setOwnScore(e.target.value)}
+                {recordableGames.length === 0 ? (
+                  <p className="opacity-60 text-sm">No unrecorded past games.</p>
+                ) : (
+                  <form onSubmit={handleRecordResult} className="space-y-3">
+                    <select
+                      className="select select-bordered w-full"
+                      value={selectedEventId}
+                      onChange={(e) => setSelectedEventId(e.target.value)}
                       required
+                    >
+                      <option value="" disabled>
+                        Select game event…
+                      </option>
+                      {recordableGames.map((ev) => (
+                        <option key={ev.id} value={ev.id}>
+                          {ev.title} —{' '}
+                          {new Date(ev.startsAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex gap-3">
+                      <label className="flex-1 space-y-1">
+                        <span className="text-sm font-medium">Our score</span>
+                        <input
+                          type="number"
+                          className="input input-bordered w-full"
+                          min={0}
+                          value={ownScore}
+                          onChange={(e) => setOwnScore(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label className="flex-1 space-y-1">
+                        <span className="text-sm font-medium">Opponent score</span>
+                        <input
+                          type="number"
+                          className="input input-bordered w-full"
+                          min={0}
+                          value={oppScore}
+                          onChange={(e) => setOppScore(e.target.value)}
+                          required
+                        />
+                      </label>
+                    </div>
+
+                    <textarea
+                      className="textarea textarea-bordered w-full"
+                      placeholder="Notes (optional)"
+                      rows={2}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
                     />
-                  </label>
-                  <label className="flex-1 space-y-1">
-                    <span className="text-sm font-medium">Opponent score</span>
-                    <input
-                      type="number"
-                      className="input input-bordered w-full"
-                      min={0}
-                      value={oppScore}
-                      onChange={(e) => setOppScore(e.target.value)}
-                      required
-                    />
-                  </label>
-                </div>
 
-                <textarea
-                  className="textarea textarea-bordered w-full"
-                  placeholder="Notes (optional)"
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
+                    {formError && <div className="alert alert-error text-sm">{formError}</div>}
+                    {formSuccess && (
+                      <div className="alert alert-success text-sm">{formSuccess}</div>
+                    )}
 
-                {formError && <div className="alert alert-error text-sm">{formError}</div>}
-                {formSuccess && <div className="alert alert-success text-sm">{formSuccess}</div>}
-
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? (
-                    <span className="loading loading-spinner loading-sm" />
-                  ) : (
-                    'Save result'
-                  )}
-                </button>
-              </form>
+                    <button type="submit" className="btn btn-primary" disabled={submitting}>
+                      {submitting ? (
+                        <span className="loading loading-spinner loading-sm" />
+                      ) : (
+                        'Save result'
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
             )}
           </>
         )}

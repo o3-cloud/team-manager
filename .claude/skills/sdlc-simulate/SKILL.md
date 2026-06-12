@@ -44,10 +44,24 @@ If the app URL cannot be determined, ask the user before proceeding.
 
 2. **Launch one subagent per persona** via the `Agent` tool (subagent_type: `claude`).
    Each persona subagent must:
-   - Open a browser session using `/playwright-cli` (invoke the `playwright-cli` skill).
+   - Derive a short slug for the persona (e.g. `coach`, `player`, `parent`).
+   - Open a **named** browser session: `playwright-cli -s=<persona-slug> open <app-url>`.
+   - **Immediately start recording** before any interaction:
+     ```bash
+     playwright-cli -s=<persona-slug> tracing-start
+     playwright-cli -s=<persona-slug> video-start .sdlc/runs/<slug>/simulation-recordings/<persona-slug>/session.webm
+     ```
+     Replace `<slug>` with the active run slug (from `state.md`) or `ad-hoc` if no run is active.
    - Navigate the app as that user: sign up or log in, complete the primary use case, explore secondary flows, attempt edge cases (empty states, validation errors, unauthorized access).
    - Record: pages visited, actions taken, errors encountered, confusing UI elements, performance observations (slow loads, layout shifts), and any console errors.
-   - Return a structured findings block: `{persona, flows_tested, issues[], observations[]}`.
+   - **Stop recording** and save artifacts after all flows are complete:
+     ```bash
+     playwright-cli -s=<persona-slug> video-stop
+     playwright-cli -s=<persona-slug> tracing-stop
+     ```
+     Move or copy the resulting trace file to `.sdlc/runs/<slug>/simulation-recordings/<persona-slug>/trace.zip` if playwright-cli writes it elsewhere.
+   - Close the named session: `playwright-cli -s=<persona-slug> close`.
+   - Return a structured findings block: `{persona, flows_tested, issues[], observations[], recording_dir}`.
 
 3. **Check observability (if available).**
    - Detect whether OpenObserve is reachable: look for `OPENOBSERVE_URL` env var, `k8s/openobserve.yaml`, or a running service at the default port.
@@ -105,6 +119,11 @@ If the app URL cannot be determined, ask the user before proceeding.
 ## Recommendations
 1. ...
 
+## Session Recordings
+| Persona | Video | Trace |
+|---------|-------|-------|
+| ...     | `.sdlc/runs/<slug>/simulation-recordings/<persona>/session.webm` | `.sdlc/runs/<slug>/simulation-recordings/<persona>/trace.zip` |
+
 ## Coverage Gaps
 <flows not tested and why>
 ```
@@ -113,7 +132,8 @@ If the app URL cannot be determined, ask the user before proceeding.
 
 - Run persona subagents in parallel where possible (single `Agent` call with multiple blocks, or sequential if the app has concurrency/rate-limit constraints).
 - Each subagent must actually interact with the app — do not fabricate findings.
-- If `/playwright-cli` is unavailable (headless not supported, no display), note it and fall back to API-only exploration via `curl` or the app's REST/GraphQL endpoints.
+- **`/playwright-cli` is mandatory.** Do not fall back to `curl` or API-only exploration. If it fails to open or crashes mid-session, retry once: close all sessions (`playwright-cli close-all`), recreate the recording directory, and restart the full persona flow from the beginning (including `tracing-start` and `video-start`). If it fails a second time, fail that persona with a clear error and abort the overall simulation — a simulation with unverified findings is invalid.
+- Create the recording directory before starting: `mkdir -p .sdlc/runs/<slug>/simulation-recordings/<persona-slug>`.
 - Do not modify any application code or data permanently during simulation (read/explore only; any test data created should be clearly labelled or cleaned up).
 - If OpenObserve is not configured, skip step 3 and note its absence in the report.
 - Claim a finding only if actually observed — do not speculate.

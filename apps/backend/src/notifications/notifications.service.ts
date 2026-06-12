@@ -4,6 +4,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { AnnouncementPostedEvent } from '../announcements/announcements.service';
+import { AnnouncementAudience } from '../announcements/entities/announcement.entity';
+import { TeamRole } from '../common/enums/team-role.enum';
 import {
   EventCancelledEvent,
   EventReinstatedEvent,
@@ -11,6 +13,12 @@ import {
 } from '../events/events.service';
 import { MembershipEntity } from '../memberships/entities/membership.entity';
 import { NotificationEntity, NotificationType } from './entities/notification.entity';
+
+const AUDIENCE_ROLES: Record<AnnouncementAudience, TeamRole[]> = {
+  [AnnouncementAudience.ALL]: Object.values(TeamRole),
+  [AnnouncementAudience.PLAYERS]: [TeamRole.PLAYER],
+  [AnnouncementAudience.PARENTS]: [TeamRole.PARENT],
+};
 
 @Injectable()
 export class NotificationsService {
@@ -72,12 +80,20 @@ export class NotificationsService {
 
   @OnEvent('announcement.posted')
   async onAnnouncementPosted(payload: AnnouncementPostedEvent): Promise<void> {
-    await this.fanOut(
-      payload.teamId,
-      NotificationType.ANNOUNCEMENT_POSTED,
-      payload.announcementId,
-      'A new announcement has been posted',
+    const allowedRoles = AUDIENCE_ROLES[payload.targetAudience];
+    const memberships = await this.membershipRepo.findBy({ teamId: payload.teamId });
+    const targets = memberships.filter((m) => allowedRoles.includes(m.role));
+    const notifications = targets.map((m) =>
+      this.notificationRepo.create({
+        userId: m.userId,
+        teamId: payload.teamId,
+        type: NotificationType.ANNOUNCEMENT_POSTED,
+        refId: payload.announcementId,
+        message: 'A new announcement has been posted',
+        isRead: false,
+      }),
     );
+    if (notifications.length) await this.notificationRepo.save(notifications);
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

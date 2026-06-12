@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TeamRoles } from '../common/decorators/team-roles.decorator';
 import { WRITE_EVENT_ROLES } from '../common/enums/team-role.enum';
@@ -24,7 +33,10 @@ export class SeasonsController {
 
   @Patch(':seasonId/archive')
   @TeamRoles(...WRITE_EVENT_ROLES)
-  archive(@Param('teamId') teamId: string, @Param('seasonId') seasonId: string) {
+  archive(
+    @Param('teamId') teamId: string,
+    @Param('seasonId', new ParseUUIDPipe({ version: '4' })) seasonId: string,
+  ) {
     return this.seasonsService.archive(teamId, seasonId);
   }
 }

@@ -51,7 +51,6 @@ manifests:
     - k8s/namespace.yaml
     - k8s/secrets.yaml
     - k8s/postgres-statefulset.yaml
-    - k8s/openobserve.yaml
     - k8s/backend-deployment.yaml
     - k8s/frontend-deployment.yaml
 
@@ -71,8 +70,3 @@ portForward:
     namespace: team-manager
     port: 3000
     localPort: 3000
-  - resourceType: service
-    resourceName: openobserve
-    namespace: team-manager
-    port: 5080
-    localPort: 5080

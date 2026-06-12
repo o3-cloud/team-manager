@@ -39,7 +39,7 @@ spec:
     ports:
     - port: 3000
 ---
-# backend egress: postgres (DB), openobserve (OTLP), DNS
+# backend egress: postgres (DB), collector OTLP (cross-namespace), DNS
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -58,11 +58,12 @@ spec:
     ports:
     - port: 5432
   - to:
-    - podSelector:
+    - namespaceSelector:
         matchLabels:
-          app: openobserve
+          kubernetes.io/metadata.name: openobserve-collector
     ports:
-    - port: 5080
+    - port: 4317
+    - port: 4318
   - ports:
     - port: 53
       protocol: UDP
@@ -84,7 +85,7 @@ spec:
   - ports:
     - port: 80
 ---
-# frontend egress: backend (nginx /api proxy), openobserve (RUM proxy), DNS
+# frontend egress: backend (nginx /api proxy), centralized OO (RUM proxy), DNS
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -103,9 +104,9 @@ spec:
     ports:
     - port: 3000
   - to:
-    - podSelector:
+    - namespaceSelector:
         matchLabels:
-          app: openobserve
+          kubernetes.io/metadata.name: openobserve
     ports:
     - port: 5080
   - ports:
@@ -133,42 +134,3 @@ spec:
     ports:
     - port: 5432
 ---
-# openobserve ingress from backend (OTLP) and frontend (RUM proxy) on port 5080
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-openobserve-ingress
-  namespace: team-manager
-spec:
-  podSelector:
-    matchLabels:
-      app: openobserve
-  policyTypes: [Ingress]
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: backend
-    - podSelector:
-        matchLabels:
-          app: frontend
-    ports:
-    - port: 5080
----
-# openobserve egress: DNS only (OO writes locally, no outbound services needed)
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-openobserve-egress
-  namespace: team-manager
-spec:
-  podSelector:
-    matchLabels:
-      app: openobserve
-  policyTypes: [Egress]
-  egress:
-  - ports:
-    - port: 53
-      protocol: UDP
-    - port: 53
-      protocol: TCP

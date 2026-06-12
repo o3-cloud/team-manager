@@ -124,8 +124,8 @@ describe('BDR-007: RSVP (e2e)', () => {
       .expect(422);
   });
 
-  // Scenario 4 — Coach views all RSVPs with nonRespondents list (AC-4, AC-5)
-  it('GET RSVPs returns rsvps array and nonRespondents list', async () => {
+  // Scenario 4 — Coach views all RSVPs with nonRespondents count and displayNames (AC-4, AC-5, FR-2)
+  it('GET RSVPs returns rsvps with displayName and nonRespondents as a count', async () => {
     const res = await request(app.getHttpServer())
       .get(`/teams/${teamId}/events/${eventId}/rsvp`)
       .set('Authorization', `Bearer ${coachToken}`)
@@ -134,14 +134,17 @@ describe('BDR-007: RSVP (e2e)', () => {
     expect(res.body).toHaveProperty('rsvps');
     expect(res.body).toHaveProperty('nonRespondents');
     expect(Array.isArray(res.body.rsvps)).toBe(true);
-    expect(Array.isArray(res.body.nonRespondents)).toBe(true);
+    // nonRespondents is now a count (number), not an array
+    expect(typeof res.body.nonRespondents).toBe('number');
 
-    // Player has RSVPed — should appear in rsvps, not nonRespondents
+    // Player has RSVPed — should appear in rsvps with a displayName
     const playerRsvp = res.body.rsvps.find((r: { status: string }) => r.status === 'MAYBE');
     expect(playerRsvp).toBeDefined();
+    expect(typeof playerRsvp.displayName).toBe('string');
+    expect(playerRsvp.displayName.length).toBeGreaterThan(0);
 
-    // Coach has not RSVPed — should appear in nonRespondents
-    expect(res.body.nonRespondents.length).toBeGreaterThan(0);
+    // Coach has not RSVPed — should count toward nonRespondents
+    expect(res.body.nonRespondents).toBeGreaterThan(0);
   });
 
   // Non-member cannot RSVP → 403

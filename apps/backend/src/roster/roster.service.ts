@@ -58,8 +58,25 @@ export class RosterService {
     if (dto.displayName !== undefined) entry.displayName = dto.displayName;
     if (dto.jerseyNumber !== undefined) entry.jerseyNumber = dto.jerseyNumber;
     if (dto.position !== undefined) entry.position = dto.position;
+    if (dto.userId !== undefined) entry.userId = dto.userId;
 
     return this.rosterRepo.save(entry);
+  }
+
+  findLinkedPlayers(
+    teamId: string,
+    parentUserId: string,
+  ): Promise<{ id: string; displayName: string; userId: string | null }[]> {
+    return this.linkRepo
+      .createQueryBuilder('l')
+      .select('re.id', 'id')
+      .addSelect('re.displayName', 'displayName')
+      .addSelect('re.userId', 'userId')
+      .innerJoin(RosterEntryEntity, 're', 're.id = l.rosterEntryId AND re.teamId = :teamId', {
+        teamId,
+      })
+      .where('l.parentUserId = :parentUserId', { parentUserId })
+      .getRawMany<{ id: string; displayName: string; userId: string | null }>();
   }
 
   async linkParent(
