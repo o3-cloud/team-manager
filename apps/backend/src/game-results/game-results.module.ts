@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AttendanceRecordEntity } from '../attendance/entities/attendance-record.entity';
 import { EventEntity } from '../events/entities/event.entity';
 import { MembershipEntity } from '../memberships/entities/membership.entity';
 import { SeasonEntity } from '../seasons/entities/season.entity';
@@ -16,6 +17,7 @@ import { GameResultsService } from './game-results.service';
       EventEntity,
       SeasonEntity,
       MembershipEntity,
+      AttendanceRecordEntity,
     ]),
   ],
   controllers: [GameResultsController],

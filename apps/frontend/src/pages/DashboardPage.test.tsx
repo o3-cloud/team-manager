@@ -145,11 +145,24 @@ describe('DashboardPage', () => {
   it('shows the season win/loss/tie record when an active season exists (FR-13)', async () => {
     mockApi({
       seasons: [{ id: 's1', status: 'ACTIVE' }],
-      record: { wins: 8, losses: 2, ties: 1 },
+      record: { wins: 8, losses: 2, ties: 1, goalsScored: 24, attendanceRate: 87 },
     });
     renderDashboard();
 
     await waitFor(() => expect(screen.getByText('8 - 2 - 1')).toBeInTheDocument());
+    expect(screen.getByText('24')).toBeInTheDocument();
+    expect(screen.getByText('87%')).toBeInTheDocument();
+  });
+
+  it('shows dash for attendance rate when no practice data exists', async () => {
+    mockApi({
+      seasons: [{ id: 's1', status: 'ACTIVE' }],
+      record: { wins: 0, losses: 0, ties: 0, goalsScored: 0, attendanceRate: null },
+    });
+    renderDashboard();
+
+    await waitFor(() => expect(screen.getByText('0 - 0 - 0')).toBeInTheDocument());
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('shows a per-section error without blanking the page (E-07)', async () => {

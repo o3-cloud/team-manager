@@ -7,6 +7,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {
+  AttendanceMark,
+  AttendanceRecordEntity,
+} from '../attendance/entities/attendance-record.entity';
 import { TeamRole } from '../common/enums/team-role.enum';
 import { EventEntity, EventStatus, EventType } from '../events/entities/event.entity';
 import { SeasonEntity } from '../seasons/entities/season.entity';
@@ -43,6 +47,8 @@ export class GameResultsService {
     private readonly eventRepo: Repository<EventEntity>,
     @InjectRepository(SeasonEntity)
     private readonly seasonRepo: Repository<SeasonEntity>,
+    @InjectRepository(AttendanceRecordEntity)
+    private readonly attendanceRepo: Repository<AttendanceRecordEntity>,
   ) {}
 
   async record(
@@ -122,12 +128,6 @@ export class GameResultsService {
     return this.gameResultRepo.findOneBy({ eventId });
   }
 
-  async findSeasonRecord(teamId: string, seasonId: string): Promise<SeasonRecordEntity | null> {
-    const season = await this.seasonRepo.findOneBy({ id: seasonId, teamId });
-    if (!season) throw new NotFoundException('Season not found');
-    return this.seasonRecordRepo.findOneBy({ seasonId });
-  }
-
   private async incrementSeasonRecord(seasonId: string, outcome: GameOutcome): Promise<void> {
     let record = await this.seasonRecordRepo.findOneBy({ seasonId });
     if (!record) {
@@ -135,6 +135,58 @@ export class GameResultsService {
     }
     record[outcomeField(outcome)]++;
     await this.seasonRecordRepo.save(record);
+  }
+
+  async findSeasonRecord(
+    teamId: string,
+    seasonId: string,
+  ): Promise<({ goalsScored: number; attendanceRate: number | null } & SeasonRecordEntity) | null> {
+    const season = await this.seasonRepo.findOneBy({ id: seasonId, teamId });
+    if (!season) throw new NotFoundException('Season not found');
+
+    const record = await this.seasonRecordRepo.findOneBy({ seasonId });
+    const [goalsScored, attendanceRate] = await Promise.all([
+      this.computeGoalsScored(seasonId),
+      this.computeAttendanceRate(seasonId),
+    ]);
+
+    if (!record) {
+      return {
+        id: '',
+        seasonId,
+        wins: 0,
+        losses: 0,
+        ties: 0,
+        goalsScored,
+        attendanceRate,
+      } as { goalsScored: number; attendanceRate: number | null } & SeasonRecordEntity;
+    }
+
+    return { ...record, goalsScored, attendanceRate };
+  }
+
+  private async computeGoalsScored(seasonId: string): Promise<number> {
+    const result = await this.gameResultRepo
+      .createQueryBuilder('gr')
+      .select('COALESCE(SUM(gr.ownScore), 0)', 'goalsScored')
+      .where('gr.seasonId = :seasonId', { seasonId })
+      .getRawOne<{ goalsScored: string }>();
+    return Number(result?.goalsScored ?? 0);
+  }
+
+  private async computeAttendanceRate(seasonId: string): Promise<number | null> {
+    const result = await this.attendanceRepo
+      .createQueryBuilder('ar')
+      .select(
+        'ROUND(100.0 * SUM(CASE WHEN ar.mark = :present THEN 1 ELSE 0 END) / COUNT(*))',
+        'rate',
+      )
+      .innerJoin(EventEntity, 'e', 'e.id = ar.eventId')
+      .where('e.seasonId = :seasonId', { seasonId })
+      .andWhere('e.type = :practice', { practice: EventType.PRACTICE })
+      .setParameter('present', AttendanceMark.PRESENT)
+      .getRawOne<{ rate: number | null }>();
+    return result?.rate ?? null;
   }
 
   private async adjustSeasonRecord(
