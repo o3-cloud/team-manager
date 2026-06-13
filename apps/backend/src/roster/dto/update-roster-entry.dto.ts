@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { RosterEntryStatus } from '../entities/roster-entry.entity';
 
 export class UpdateRosterEntryDto {
   @IsOptional()
@@ -20,4 +21,8 @@ export class UpdateRosterEntryDto {
   @IsOptional()
   @IsUUID()
   userId?: string;
+
+  @IsOptional()
+  @IsEnum(RosterEntryStatus)
+  status?: RosterEntryStatus;
 }

@@ -11,7 +11,7 @@ import { MembershipEntity } from '../memberships/entities/membership.entity';
 import { CreateRosterEntryDto } from './dto/create-roster-entry.dto';
 import { UpdateRosterEntryDto } from './dto/update-roster-entry.dto';
 import { ParentPlayerLinkEntity } from './entities/parent-player-link.entity';
-import { RosterEntryEntity } from './entities/roster-entry.entity';
+import { RosterEntryEntity, RosterEntryStatus } from './entities/roster-entry.entity';
 
 @Injectable()
 export class RosterService {
@@ -31,6 +31,7 @@ export class RosterService {
       jerseyNumber: dto.jerseyNumber ?? null,
       position: dto.position ?? null,
       userId: dto.userId ?? null,
+      status: dto.status ?? RosterEntryStatus.ACTIVE,
     });
 
     try {
@@ -59,6 +60,7 @@ export class RosterService {
     if (dto.jerseyNumber !== undefined) entry.jerseyNumber = dto.jerseyNumber;
     if (dto.position !== undefined) entry.position = dto.position;
     if (dto.userId !== undefined) entry.userId = dto.userId;
+    if (dto.status !== undefined) entry.status = dto.status;
 
     return this.rosterRepo.save(entry);
   }

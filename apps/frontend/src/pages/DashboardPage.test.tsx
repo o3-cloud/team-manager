@@ -54,7 +54,16 @@ describe('DashboardPage', () => {
           notes: null,
         },
       ],
-      roster: [{ id: 'r1', displayName: 'Liam', jerseyNumber: '10', position: 'FW', userId: 'u1' }],
+      roster: [
+        {
+          id: 'r1',
+          displayName: 'Liam',
+          jerseyNumber: '10',
+          position: 'FW',
+          userId: 'u1',
+          status: 'ACTIVE',
+        },
+      ],
       notifications: [{ id: 'n1', isRead: false }],
     });
     renderDashboard();
@@ -94,11 +103,25 @@ describe('DashboardPage', () => {
     );
   });
 
-  it('renders roster rows with Active and Unlinked status badges (AC-02, OQ-02)', async () => {
+  it('renders roster rows with Active and Injured status badges (AC-02, OQ-02)', async () => {
     mockApi({
       roster: [
-        { id: 'r1', displayName: 'Liam Johnson', jerseyNumber: '10', position: 'FW', userId: 'u1' },
-        { id: 'r2', displayName: 'Mason Davis', jerseyNumber: '1', position: 'GK', userId: null },
+        {
+          id: 'r1',
+          displayName: 'Liam Johnson',
+          jerseyNumber: '10',
+          position: 'FW',
+          userId: 'u1',
+          status: 'ACTIVE',
+        },
+        {
+          id: 'r2',
+          displayName: 'Mason Davis',
+          jerseyNumber: '1',
+          position: 'GK',
+          userId: null,
+          status: 'INJURED',
+        },
       ],
     });
     renderDashboard();
@@ -106,7 +129,7 @@ describe('DashboardPage', () => {
     await waitFor(() => expect(screen.getByText('Liam Johnson')).toBeInTheDocument());
     expect(screen.getByText('Mason Davis')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.getByText('Unlinked')).toBeInTheDocument();
+    expect(screen.getByText('Injured')).toBeInTheDocument();
   });
 
   it('shows empty states when there is no data (E-01, E-02, E-04, E-03)', async () => {

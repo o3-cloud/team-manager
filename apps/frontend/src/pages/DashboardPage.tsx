@@ -15,12 +15,15 @@ interface TeamEvent {
   notes: string | null;
 }
 
+type RosterEntryStatus = 'ACTIVE' | 'INJURED' | 'INACTIVE';
+
 interface RosterEntry {
   id: string;
   displayName: string;
   jerseyNumber: string | null;
   position: string | null;
   userId: string | null;
+  status: RosterEntryStatus;
 }
 
 interface Notification {
@@ -288,11 +291,21 @@ export default function DashboardPage() {
                           <td>{p.position ?? '—'}</td>
                           <td>{p.jerseyNumber ?? '—'}</td>
                           <td>
-                            {p.userId ? (
-                              <span className="badge badge-success badge-sm">Active</span>
-                            ) : (
-                              <span className="badge badge-ghost badge-sm">Unlinked</span>
-                            )}
+                            <span
+                              className={`badge badge-sm ${
+                                p.status === 'ACTIVE'
+                                  ? 'badge-success'
+                                  : p.status === 'INJURED'
+                                    ? 'badge-warning'
+                                    : 'badge-ghost'
+                              }`}
+                            >
+                              {p.status === 'ACTIVE'
+                                ? 'Active'
+                                : p.status === 'INJURED'
+                                  ? 'Injured'
+                                  : 'Inactive'}
+                            </span>
                           </td>
                         </tr>
                       ))}
