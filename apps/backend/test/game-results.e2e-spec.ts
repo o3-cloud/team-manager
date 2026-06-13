@@ -1,5 +1,7 @@
 import { INestApplication } from '@nestjs/common';
+
 import request = require('supertest');
+
 import { createTestApp, teardownTestApp } from './helpers/test-app';
 
 async function inviteAndAccept(
@@ -201,7 +203,7 @@ describe('BDR-009: Game Results (e2e)', () => {
   });
 
   // Scenario 2 — Season record reflects all results (AC-3)
-  it('GET season record returns cumulative wins/losses/ties', async () => {
+  it('GET season record returns cumulative wins/losses/ties and goals scored', async () => {
     // At this point: WIN (3-1), TIE (3-3), LOSS (1-3), LOSS (2-0 → updated to 1-2), WIN (duplicate 2-0)
     // winEventId=WIN, tieEventId=TIE, lossEventId=LOSS, updateEventId=LOSS (updated), duplicateEventId=WIN
     // Also recordEventId has no result yet
@@ -223,6 +225,23 @@ describe('BDR-009: Game Results (e2e)', () => {
     expect(typeof res.body.losses).toBe('number');
     expect(typeof res.body.ties).toBe('number');
     expect(res.body.wins + res.body.losses + res.body.ties).toBeGreaterThan(0);
+    expect(res.body).toHaveProperty('goalsScored');
+    expect(res.body).toHaveProperty('attendanceRate');
+    expect(typeof res.body.goalsScored).toBe('number');
+    expect(res.body.attendanceRate).toBeNull();
+  });
+
+  // Scenario 2b — Goals scored aggregate
+  it('GET season record sums ownScore across all games for goalsScored', async () => {
+    // Existing game results at this point:
+    // WIN 3-1, TIE 3-3, LOSS 1-3, updateEventId now LOSS 1-2, duplicate WIN 2-0, recordEventId WIN 4-0
+    const res = await request(app.getHttpServer())
+      .get(`/teams/${teamId}/seasons/${seasonId}/record`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .expect(200);
+
+    // 3 + 3 + 1 + 1 + 2 + 4 = 14
+    expect(res.body.goalsScored).toBe(14);
   });
 
   // Player can also view season record (AC-1 — visible to all members)

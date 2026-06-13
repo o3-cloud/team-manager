@@ -47,6 +47,8 @@ interface SeasonRecord {
   wins: number;
   losses: number;
   ties: number;
+  goalsScored: number;
+  attendanceRate: number | null;
 }
 
 type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: T };
@@ -313,7 +315,10 @@ export default function DashboardPage() {
                   </table>
                   {roster.data.length > 6 && (
                     <p className="text-xs text-base-content/50 mt-2 text-center">
-                      and {roster.data.length - 6} more — <Link to={`/teams/${teamId}/detail`} className="link link-primary">view all</Link>
+                      and {roster.data.length - 6} more —{' '}
+                      <Link to={`/teams/${teamId}/detail`} className="link link-primary">
+                        view all
+                      </Link>
                     </p>
                   )}
                 </div>
@@ -400,13 +405,33 @@ export default function DashboardPage() {
                 <p className="py-2 text-sm text-base-content/60">No active season.</p>
               )}
               {record.status === 'ready' && record.data && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-base-content/50">
-                    Win / Loss / Tie
-                  </p>
-                  <p className="text-2xl font-bold">
-                    {record.data.wins} - {record.data.losses} - {record.data.ties}
-                  </p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-base-content/50">
+                      Win / Loss / Tie
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {record.data.wins} - {record.data.losses} - {record.data.ties}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-base-content/50">
+                        Goals Scored
+                      </p>
+                      <p className="text-xl font-bold">{record.data.goalsScored}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-base-content/50">
+                        Attendance
+                      </p>
+                      <p className="text-xl font-bold">
+                        {record.data.attendanceRate === null
+                          ? '—'
+                          : `${record.data.attendanceRate}%`}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
