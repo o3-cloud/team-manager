@@ -1,5 +1,7 @@
 import { INestApplication } from '@nestjs/common';
+
 import request = require('supertest');
+
 import { createTestApp, teardownTestApp } from './helpers/test-app';
 
 async function inviteAndAccept(
@@ -31,15 +33,19 @@ describe('BDR-004: Roster Management (e2e)', () => {
   beforeAll(async () => {
     ({ app } = await createTestApp());
 
-    const r1 = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({ email: 'roster-coach@example.com', displayName: 'Roster Coach', password: 'Password1!' });
+    const r1 = await request(app.getHttpServer()).post('/auth/register').send({
+      email: 'roster-coach@example.com',
+      displayName: 'Roster Coach',
+      password: 'Password1!',
+    });
     coachToken = r1.body.accessToken;
     coachUserId = r1.body.user.id;
 
-    const r2 = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({ email: 'roster-nonmember@example.com', displayName: 'Non Member', password: 'Password1!' });
+    const r2 = await request(app.getHttpServer()).post('/auth/register').send({
+      email: 'roster-nonmember@example.com',
+      displayName: 'Non Member',
+      password: 'Password1!',
+    });
     nonMemberToken = r2.body.accessToken;
 
     const t = await request(app.getHttpServer())
@@ -62,13 +68,34 @@ describe('BDR-004: Roster Management (e2e)', () => {
 
     expect(res.body.displayName).toBe('Jane Doe');
     expect(res.body.jerseyNumber).toBe('10');
+    expect(res.body.status).toBe('ACTIVE');
 
     const roster = await request(app.getHttpServer())
       .get(`/teams/${teamId}/roster`)
       .set('Authorization', `Bearer ${coachToken}`)
       .expect(200);
 
-    expect(roster.body.some((e: { displayName: string }) => e.displayName === 'Jane Doe')).toBe(true);
+    expect(roster.body.some((e: { displayName: string }) => e.displayName === 'Jane Doe')).toBe(
+      true,
+    );
+  });
+
+  it('coach can add a player with an explicit status', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/teams/${teamId}/roster`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ displayName: 'Injured Player', status: 'INJURED' })
+      .expect(201);
+
+    expect(res.body.status).toBe('INJURED');
+  });
+
+  it('rejects an invalid status value with 400', async () => {
+    await request(app.getHttpServer())
+      .post(`/teams/${teamId}/roster`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ displayName: 'Bad Status', status: 'SUSPENDED' })
+      .expect(400);
   });
 
   // Scenario 2 — Update player details
@@ -88,11 +115,29 @@ describe('BDR-004: Roster Management (e2e)', () => {
     expect(updated.body.jerseyNumber).toBe('99');
   });
 
+  it('coach can update a roster entry status', async () => {
+    const add = await request(app.getHttpServer())
+      .post(`/teams/${teamId}/roster`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ displayName: 'Status Test' })
+      .expect(201);
+
+    const updated = await request(app.getHttpServer())
+      .patch(`/teams/${teamId}/roster/${add.body.id}`)
+      .set('Authorization', `Bearer ${coachToken}`)
+      .send({ status: 'INACTIVE' })
+      .expect(200);
+
+    expect(updated.body.status).toBe('INACTIVE');
+  });
+
   // Scenario 3 — Link parent to player (parent must be PARENT-role member via invite)
   it('coach can link a PARENT-role member to a roster entry', async () => {
-    const parentReg = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({ email: 'roster-parent2@example.com', displayName: 'Roster Parent 2', password: 'Password1!' });
+    const parentReg = await request(app.getHttpServer()).post('/auth/register').send({
+      email: 'roster-parent2@example.com',
+      displayName: 'Roster Parent 2',
+      password: 'Password1!',
+    });
     const parentUserId = parentReg.body.user.id;
     const parentToken = parentReg.body.accessToken;
 
@@ -117,9 +162,11 @@ describe('BDR-004: Roster Management (e2e)', () => {
 
   // R08 negative — linking a non-PARENT-member is rejected
   it('cannot link a user who is not a PARENT-role team member', async () => {
-    const strangerReg = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({ email: 'roster-stranger@example.com', displayName: 'Stranger', password: 'Password1!' });
+    const strangerReg = await request(app.getHttpServer()).post('/auth/register').send({
+      email: 'roster-stranger@example.com',
+      displayName: 'Stranger',
+      password: 'Password1!',
+    });
     const strangerId = strangerReg.body.user.id;
 
     const add = await request(app.getHttpServer())
@@ -137,9 +184,11 @@ describe('BDR-004: Roster Management (e2e)', () => {
 
   // Scenario 4 — Duplicate parent link rejected
   it('duplicate parent link is rejected', async () => {
-    const parentReg = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({ email: 'roster-parent3@example.com', displayName: 'Roster Parent 3', password: 'Password1!' });
+    const parentReg = await request(app.getHttpServer()).post('/auth/register').send({
+      email: 'roster-parent3@example.com',
+      displayName: 'Roster Parent 3',
+      password: 'Password1!',
+    });
     const parentUserId = parentReg.body.user.id;
     const parentToken2 = parentReg.body.accessToken;
 

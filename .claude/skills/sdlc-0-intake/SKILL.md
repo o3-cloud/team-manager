@@ -2,7 +2,7 @@
 name: sdlc:0-intake
 description: Intake and classify a software change for the AI-SDLC lifecycle. Trigger when starting a new change, writing the minimal human input contract, classifying a change, or setting up an SDLC run. Produces the contract, the change class, the gate profile, and the run state file.
 when_to_use: Use as the first step of an AI-SDLC delivery, before any quality gate. Captures the five-part Minimal Human Input Contract, classifies the change, resolves which gates apply, and creates the run directory. Do not use to write requirements detail — that is the Requirements gate.
-argument-hint: "<intent> [level=N] [risk=N]"
+argument-hint: "<intent> [level=N] [risk=N] [research=on|off]"
 disable-model-invocation: false
 user-invocable: true
 allowed-tools:
@@ -23,8 +23,9 @@ set up the run so the quality gates can execute against shared state.
 
 ## Inputs
 
-`$ARGUMENTS`: the change intent, optionally `level=N` (autonomy 1–5) and `risk=N`
-(risk tolerance 2–10). See [../sdlc-deliver/control-model.md](../sdlc-deliver/control-model.md).
+`$ARGUMENTS`: the change intent, optionally `level=N` (autonomy 1–5), `risk=N`
+(risk tolerance 2–10), and `research=on|off` to force or skip the pre-gate research step.
+See [../sdlc-deliver/control-model.md](../sdlc-deliver/control-model.md).
 
 ## Workflow
 
@@ -63,9 +64,26 @@ set up the run so the quality gates can execute against shared state.
    L4→8, L5→9).
 5. **Create the run directory** `.sdlc/runs/<slug>/` where `<slug>` is a short
    kebab-case name from the intent.
-6. **Write `contract.md`** — the five contract sections plus the restated objective.
-7. **Write `state.md`** using the structure below.
-8. Report the slug, change class, gate profile, level, risk tolerance.
+6. **Run conditional pre-gate research** (new). If the change class is **Trivial** or **Test-only**, skip this step unless `research=on` was explicitly passed. Otherwise, unless `research=off` was passed, invoke `/sdlc:research` with the run slug and `out=.sdlc/runs/<slug>/`:
+
+   | Change class | `questions=N` passed to research |
+   |---|---|
+   | Trivial | skip (unless `research=on`) |
+   | Test-only | skip (unless `research=on`) |
+   | Contained bug fix | 3 |
+   | Internal refactor | 3 |
+   | Small feature increment | 5 |
+   | New feature | 7 |
+   | Schema / data migration | 7 |
+   | Public API change | 8 |
+   | Security / auth change | 8 |
+   | Dependency change | 5 |
+   | Infrastructure / deploy | 6 |
+
+   On success, record `research-report.md` and `research-questions.md` paths under `## Pre-gate artifacts` in `state.md`. If the research step errors, record the failure reason there and continue — research failure is non-blocking.
+7. **Write `contract.md`** — the five contract sections plus the restated objective.
+8. **Write `state.md`** using the structure below.
+9. Report the slug, change class, gate profile, level, risk tolerance, pre-gate research status.
 
 ## state.md structure
 
@@ -81,6 +99,11 @@ set up the run so the quality gates can execute against shared state.
 - Latest risk score: <n/a until gate 3>
 - Status: in-progress
 - Created: <date>
+
+## Pre-gate artifacts
+
+- Research: <path to research-report.md or reason skipped/failed>
+- Research questions: <path to research-questions.md or "n/a">
 
 ## Gate ledger
 

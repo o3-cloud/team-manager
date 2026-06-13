@@ -6,7 +6,7 @@ Proposed
 
 ## Behavior
 
-A coach/admin can add players to a team roster, update their profile details, and link a parent/guardian to a player.
+A coach/admin can add players to a team roster, update their profile details (including an `ACTIVE`, `INJURED`, or `INACTIVE` status), and link a parent/guardian to a player.
 
 ## Context
 
@@ -14,10 +14,11 @@ Rosters define who is on a team. Player details like jersey number and position 
 
 ## Acceptance Criteria
 
-1. A coach/admin can add a player to the roster with a name, jersey number, and position; the player appears in the team roster listing.
-2. A coach/admin can update an existing player's jersey number, position, or name and the roster reflects the change.
-3. A coach/admin can link a registered parent/guardian account to a player; the parent can subsequently view and manage RSVP for that player.
-4. A player profile can be linked to at most one team roster entry per team; duplicate additions are rejected.
+1. A coach/admin can add a player to the roster with a name, jersey number, position, and status; the player appears in the team roster listing with the selected status.
+2. A coach/admin can update an existing player's jersey number, position, name, or status and the roster reflects the change.
+3. Roster entries created before the status field existed default to `ACTIVE`; no existing player appears without a status.
+4. A coach/admin can link a registered parent/guardian account to a player; the parent can subsequently view and manage RSVP for that player.
+5. A player profile can be linked to at most one team roster entry per team; duplicate additions are rejected.
 
 ## Verification
 
@@ -30,6 +31,11 @@ Rosters define who is on a team. Player details like jersey number and position 
 - Given an existing player on the roster
 - When the coach updates the player's jersey number to a new value
 - Then the roster entry for that player returns the updated jersey number
+
+**Scenario 2b — Update player status**
+- Given an existing player on the roster with status `ACTIVE`
+- When the coach updates the player's status to `INJURED`
+- Then the roster entry for that player returns status `INJURED`
 
 **Scenario 3 — Link parent to player**
 - Given a registered user with the parent role and an existing player on the roster

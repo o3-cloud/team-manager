@@ -39,12 +39,21 @@ interface Season {
   status: 'ACTIVE' | 'ARCHIVED';
 }
 
+type RosterEntryStatus = 'ACTIVE' | 'INJURED' | 'INACTIVE';
+
+const STATUS_LABEL: Record<RosterEntryStatus, string> = {
+  ACTIVE: 'Active',
+  INJURED: 'Injured',
+  INACTIVE: 'Inactive',
+};
+
 interface RosterEntry {
   id: string;
   displayName: string;
   jerseyNumber: string | null;
   position: string | null;
   userId: string | null;
+  status: RosterEntryStatus;
 }
 
 interface Invite {
@@ -83,6 +92,7 @@ export default function TeamDetailPage() {
   const [addDisplayName, setAddDisplayName] = useState('');
   const [addJersey, setAddJersey] = useState('');
   const [addPosition, setAddPosition] = useState('');
+  const [addStatus, setAddStatus] = useState<RosterEntryStatus>('ACTIVE');
   const [rosterAddError, setRosterAddError] = useState('');
   const [rosterAddSubmitting, setRosterAddSubmitting] = useState(false);
 
@@ -91,6 +101,7 @@ export default function TeamDetailPage() {
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editJersey, setEditJersey] = useState('');
   const [editPosition, setEditPosition] = useState('');
+  const [editStatus, setEditStatus] = useState<RosterEntryStatus>('ACTIVE');
   const [rosterEditError, setRosterEditError] = useState('');
   const [rosterEditSubmitting, setRosterEditSubmitting] = useState(false);
 
@@ -214,12 +225,14 @@ export default function TeamDetailPage() {
         displayName: name,
         jerseyNumber: addJersey.trim() || undefined,
         position: addPosition.trim() || undefined,
+        status: addStatus,
       });
       setRoster((prev) => [...prev, created]);
       setShowAddPlayer(false);
       setAddDisplayName('');
       setAddJersey('');
       setAddPosition('');
+      setAddStatus('ACTIVE');
     } catch (err) {
       setRosterAddError(err instanceof Error ? err.message : 'Failed to add player');
     } finally {
@@ -232,6 +245,7 @@ export default function TeamDetailPage() {
     setEditDisplayName(entry.displayName);
     setEditJersey(entry.jerseyNumber ?? '');
     setEditPosition(entry.position ?? '');
+    setEditStatus(entry.status);
     setRosterEditError('');
   }
 
@@ -249,6 +263,7 @@ export default function TeamDetailPage() {
         displayName: name,
         jerseyNumber: editJersey.trim() || undefined,
         position: editPosition.trim() || undefined,
+        status: editStatus,
       });
       setRoster((prev) => prev.map((e) => (e.id === entryId ? updated : e)));
       setEditEntryId(null);
@@ -589,6 +604,23 @@ export default function TeamDetailPage() {
                           onChange={(e) => setAddPosition(e.target.value)}
                         />
                       </div>
+                      <div className="form-control w-32">
+                        <label className="label py-0" htmlFor="add-status">
+                          <span className="label-text text-xs">Status</span>
+                        </label>
+                        <select
+                          id="add-status"
+                          className="select select-bordered select-sm"
+                          value={addStatus}
+                          onChange={(e) => setAddStatus(e.target.value as RosterEntryStatus)}
+                        >
+                          {(['ACTIVE', 'INJURED', 'INACTIVE'] as RosterEntryStatus[]).map((s) => (
+                            <option key={s} value={s}>
+                              {STATUS_LABEL[s]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -648,6 +680,18 @@ export default function TeamDetailPage() {
                           maxLength={50}
                           placeholder="Position"
                         />
+                        <select
+                          className="select select-bordered select-sm w-28"
+                          aria-label="Status"
+                          value={editStatus}
+                          onChange={(ev) => setEditStatus(ev.target.value as RosterEntryStatus)}
+                        >
+                          {(['ACTIVE', 'INJURED', 'INACTIVE'] as RosterEntryStatus[]).map((s) => (
+                            <option key={s} value={s}>
+                              {STATUS_LABEL[s]}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -675,65 +719,80 @@ export default function TeamDetailPage() {
                           #{e.jerseyNumber ?? '—'} · {e.position ?? 'No position'}
                         </p>
                       </div>
-                      {canWrite(role) && (
-                        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-outline"
-                            onClick={() => openEdit(e)}
-                          >
-                            Edit
-                          </button>
-                          {linkedParents[e.id] ? (
-                            <span className="text-xs opacity-60">
-                              Parent: {linkedParents[e.id]}
-                            </span>
-                          ) : linkParentEntryId === e.id ? (
-                            <div className="flex items-center gap-1">
-                              {linkError && <span className="text-xs text-error">{linkError}</span>}
-                              {parentMembers.length === 0 ? (
-                                <span className="text-xs opacity-60">No PARENT members</span>
-                              ) : (
-                                <select
-                                  className="select select-bordered select-xs"
-                                  value={linkParentUserId}
-                                  aria-label="Select parent"
-                                  onChange={(ev) => setLinkParentUserId(ev.target.value)}
-                                >
-                                  {parentMembers.map((m) => (
-                                    <option key={m.userId} value={m.userId}>
-                                      {m.displayName ?? m.userId.slice(0, 8)}
-                                    </option>
-                                  ))}
-                                </select>
-                              )}
-                              <button
-                                type="button"
-                                className="btn btn-xs btn-primary"
-                                disabled={linkSubmitting || parentMembers.length === 0}
-                                onClick={() => submitLinkParent(e.id)}
-                              >
-                                {linkSubmitting ? '…' : 'Link'}
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-xs btn-ghost"
-                                onClick={() => setLinkParentEntryId(null)}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`badge badge-sm ${
+                            e.status === 'ACTIVE'
+                              ? 'badge-success'
+                              : e.status === 'INJURED'
+                                ? 'badge-warning'
+                                : 'badge-ghost'
+                          }`}
+                        >
+                          {STATUS_LABEL[e.status]}
+                        </span>
+                        {canWrite(role) && (
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                             <button
                               type="button"
-                              className="btn btn-xs btn-secondary"
-                              onClick={() => openLinkParent(e.id)}
+                              className="btn btn-xs btn-outline"
+                              onClick={() => openEdit(e)}
                             >
-                              Link Parent
+                              Edit
                             </button>
-                          )}
-                        </div>
-                      )}
+                            {linkedParents[e.id] ? (
+                              <span className="text-xs opacity-60">
+                                Parent: {linkedParents[e.id]}
+                              </span>
+                            ) : linkParentEntryId === e.id ? (
+                              <div className="flex items-center gap-1">
+                                {linkError && (
+                                  <span className="text-xs text-error">{linkError}</span>
+                                )}
+                                {parentMembers.length === 0 ? (
+                                  <span className="text-xs opacity-60">No PARENT members</span>
+                                ) : (
+                                  <select
+                                    className="select select-bordered select-xs"
+                                    value={linkParentUserId}
+                                    aria-label="Select parent"
+                                    onChange={(ev) => setLinkParentUserId(ev.target.value)}
+                                  >
+                                    {parentMembers.map((m) => (
+                                      <option key={m.userId} value={m.userId}>
+                                        {m.displayName ?? m.userId.slice(0, 8)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                                <button
+                                  type="button"
+                                  className="btn btn-xs btn-primary"
+                                  disabled={linkSubmitting || parentMembers.length === 0}
+                                  onClick={() => submitLinkParent(e.id)}
+                                >
+                                  {linkSubmitting ? '…' : 'Link'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-xs btn-ghost"
+                                  onClick={() => setLinkParentEntryId(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn-xs btn-secondary"
+                                onClick={() => openLinkParent(e.id)}
+                              >
+                                Link Parent
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </li>
