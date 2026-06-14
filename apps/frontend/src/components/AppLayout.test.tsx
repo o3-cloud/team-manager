@@ -71,7 +71,9 @@ describe('AppLayout', () => {
 
   it('shows the team name fetched from the API (FR-03)', async () => {
     renderLayout();
-    await waitFor(() => expect(screen.getByText('Victory FC')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('sidebar-team-name')).toHaveTextContent('Victory FC'),
+    );
   });
 
   it('shows the unread notification count badge (FR-04)', async () => {
@@ -84,5 +86,17 @@ describe('AppLayout', () => {
   it('renders the user display name in the top bar', () => {
     renderLayout();
     expect(screen.getByText('Ryan')).toBeInTheDocument();
+  });
+
+  it('does not render the non-functional search input', () => {
+    renderLayout();
+    expect(screen.queryByPlaceholderText(/search players/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the team name in the top bar', async () => {
+    renderLayout();
+    await waitFor(() =>
+      expect(screen.getByTestId('topbar-team-name')).toHaveTextContent('Victory FC'),
+    );
   });
 });

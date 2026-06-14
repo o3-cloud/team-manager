@@ -1,5 +1,5 @@
 import { type ReactElement, useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
@@ -141,7 +141,6 @@ const NAV_ITEMS: NavItem[] = [
 export function AppLayout() {
   const { teamId } = useParams<{ teamId: string }>();
   const { user, logout } = useAuth();
-  const location = useLocation();
   const [teamName, setTeamName] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
@@ -162,7 +161,7 @@ export function AppLayout() {
       .get<Notification[]>(`/teams/${teamId}/notifications`)
       .then((items) => setUnreadCount(items.filter((n) => !n.isRead).length))
       .catch(() => setUnreadCount(0));
-  }, [teamId, location.pathname]);
+  }, [teamId]);
 
   function closeDrawer() {
     const toggle = document.getElementById('app-drawer-toggle') as HTMLInputElement | null;
@@ -193,23 +192,12 @@ export function AppLayout() {
           </label>
 
           <div className="flex-1">
-            <label className="input input-sm input-bordered hidden w-full max-w-md items-center gap-2 sm:flex">
-              <svg
-                className="h-4 w-4 opacity-60"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <circle cx="11" cy="11" r="8" strokeWidth="2" />
-                <path strokeWidth="2" strokeLinecap="round" d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                type="search"
-                className="grow"
-                placeholder="Search players, events, messages..."
-              />
-            </label>
+            <h1
+              data-testid="topbar-team-name"
+              className="truncate text-base font-semibold text-base-content"
+            >
+              {teamName || 'Team Manager'}
+            </h1>
           </div>
 
           <Link
@@ -298,7 +286,9 @@ export function AppLayout() {
               </svg>
             </div>
             <div className="text-center">
-              <p className="truncate text-base font-bold">{teamName || 'Team'}</p>
+              <p data-testid="sidebar-team-name" className="truncate text-base font-bold">
+                {teamName || 'Team'}
+              </p>
               <p className="text-xs text-neutral-content/60">Team Manager</p>
             </div>
           </div>
