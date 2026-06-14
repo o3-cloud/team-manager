@@ -337,582 +337,568 @@ export default function TeamDetailPage() {
 
   if (accessDenied) {
     return (
-      <div className="min-h-screen bg-base-200 p-6">
-        <div className="max-w-3xl mx-auto space-y-4">
-          <Link to="/teams" className="btn btn-sm btn-ghost">
-            ← Back to teams
-          </Link>
-          <div className="card bg-base-100 shadow p-6 space-y-3">
-            <div className="alert alert-error">
-              <span>You don't have access to this team.</span>
-            </div>
-            <Link to="/teams" className="btn btn-primary btn-sm">
-              Back to My Teams
-            </Link>
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div className="card bg-base-100 shadow p-6 space-y-3">
+          <div className="alert alert-error">
+            <span>You don't have access to this team.</span>
           </div>
+          <Link to="/teams" className="btn btn-primary btn-sm">
+            Back to My Teams
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-base-200 p-6">
-      <div className="max-w-3xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
-          <Link to="/teams" className="btn btn-sm btn-ghost">
-            ← Back to teams
+    <div className="max-w-3xl mx-auto space-y-4">
+      <div className="flex items-center justify-end">
+        <div className="flex gap-2">
+          <Link to={`/teams/${teamId}/events`} className="btn btn-sm btn-outline">
+            Events
           </Link>
-          <div className="flex gap-2">
-            <Link to={`/teams/${teamId}/events`} className="btn btn-sm btn-outline">
-              Events
-            </Link>
-            <Link to={`/teams/${teamId}/announcements`} className="btn btn-sm btn-outline">
-              Announcements
-            </Link>
-            <Link to={`/teams/${teamId}/notifications`} className="btn btn-sm btn-outline">
-              Notifications
-            </Link>
-            <Link to={`/teams/${teamId}/game-results`} className="btn btn-sm btn-outline">
-              Results
-            </Link>
-          </div>
+          <Link to={`/teams/${teamId}/announcements`} className="btn btn-sm btn-outline">
+            Announcements
+          </Link>
+          <Link to={`/teams/${teamId}/notifications`} className="btn btn-sm btn-outline">
+            Notifications
+          </Link>
+          <Link to={`/teams/${teamId}/game-results`} className="btn btn-sm btn-outline">
+            Results
+          </Link>
         </div>
+      </div>
 
-        {error && <div className="alert alert-error text-sm">{error}</div>}
+      {error && <div className="alert alert-error text-sm">{error}</div>}
 
-        <div role="tablist" className="tabs tabs-boxed">
-          {(['members', 'seasons', 'roster', 'invites'] as Tab[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              className={`tab capitalize${tab === t ? ' tab-active' : ''}`}
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+      <div role="tablist" className="tabs tabs-boxed">
+        {(['members', 'seasons', 'roster', 'invites'] as Tab[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            className={`tab capitalize${tab === t ? ' tab-active' : ''}`}
+            onClick={() => setTab(t)}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
 
-        {tab === 'members' && (
-          <div className="space-y-2">
-            {memberRoleError && <div className="alert alert-error text-sm">{memberRoleError}</div>}
-            <ul className="space-y-2">
-              {members.map((m) => (
-                <li
-                  key={m.id}
-                  className="card bg-base-100 shadow p-3 flex flex-row items-center justify-between"
-                >
-                  <span className="text-sm">
-                    {m.displayName ?? displayNames.get(m.userId) ?? `${m.userId.slice(0, 8)}…`}
-                  </span>
-                  {canWrite(role) && m.userId !== user?.id ? (
-                    <select
-                      className="select select-bordered select-xs"
-                      value={m.role}
-                      disabled={updatingMemberId === m.id}
-                      aria-label={`Role for ${m.displayName ?? m.userId}`}
-                      onChange={(e) =>
-                        updateMemberRole(m.id, m.userId, e.target.value as MemberRole)
-                      }
-                    >
-                      {ALL_ROLES.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span className="badge badge-neutral">{ROLE_LABEL[m.role] ?? m.role}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {tab === 'seasons' && (
-          <div className="space-y-2">
-            {canWrite(role) && (
-              <div>
-                {!showCreateSeason ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => setShowCreateSeason(true)}
-                  >
-                    Create Season
-                  </button>
-                ) : (
-                  <form onSubmit={createSeason} className="card bg-base-100 shadow p-4 space-y-3">
-                    <h3 className="font-semibold text-sm">New Season</h3>
-                    <div className="form-control">
-                      <label className="label py-0" htmlFor="season-name">
-                        <span className="label-text text-xs">Name</span>
-                      </label>
-                      <input
-                        id="season-name"
-                        type="text"
-                        className="input input-bordered input-sm"
-                        required
-                        value={newSeasonName}
-                        onChange={(e) => setNewSeasonName(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="form-control flex-1">
-                        <label className="label py-0" htmlFor="season-start">
-                          <span className="label-text text-xs">Start date</span>
-                        </label>
-                        <input
-                          id="season-start"
-                          type="date"
-                          className="input input-bordered input-sm"
-                          required
-                          value={newSeasonStart}
-                          onChange={(e) => setNewSeasonStart(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-control flex-1">
-                        <label className="label py-0" htmlFor="season-end">
-                          <span className="label-text text-xs">End date</span>
-                        </label>
-                        <input
-                          id="season-end"
-                          type="date"
-                          className="input input-bordered input-sm"
-                          required
-                          value={newSeasonEnd}
-                          onChange={(e) => setNewSeasonEnd(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    {seasonFormError && (
-                      <div className="alert alert-error text-xs py-2">{seasonFormError}</div>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        className="btn btn-primary btn-sm"
-                        disabled={seasonSubmitting}
-                      >
-                        {seasonSubmitting ? 'Creating…' : 'Create'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => {
-                          setShowCreateSeason(false);
-                          setSeasonFormError('');
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
-            {seasons.map((s) => (
-              <div
-                key={s.id}
+      {tab === 'members' && (
+        <div className="space-y-2">
+          {memberRoleError && <div className="alert alert-error text-sm">{memberRoleError}</div>}
+          <ul className="space-y-2">
+            {members.map((m) => (
+              <li
+                key={m.id}
                 className="card bg-base-100 shadow p-3 flex flex-row items-center justify-between"
               >
-                <div>
-                  <p className="font-medium">{s.name}</p>
-                  <p className="text-xs opacity-60">
-                    {s.startDate} – {s.endDate}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`badge ${s.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'}`}
+                <span className="text-sm">
+                  {m.displayName ?? displayNames.get(m.userId) ?? `${m.userId.slice(0, 8)}…`}
+                </span>
+                {canWrite(role) && m.userId !== user?.id ? (
+                  <select
+                    className="select select-bordered select-xs"
+                    value={m.role}
+                    disabled={updatingMemberId === m.id}
+                    aria-label={`Role for ${m.displayName ?? m.userId}`}
+                    onChange={(e) => updateMemberRole(m.id, m.userId, e.target.value as MemberRole)}
                   >
-                    {s.status}
-                  </span>
-                  {s.status === 'ACTIVE' && canWrite(role) && (
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-warning"
-                      onClick={() => archiveSeason(s.id)}
-                    >
-                      Archive
-                    </button>
-                  )}
-                </div>
-              </div>
+                    {ALL_ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="badge badge-neutral">{ROLE_LABEL[m.role] ?? m.role}</span>
+                )}
+              </li>
             ))}
-          </div>
-        )}
+          </ul>
+        </div>
+      )}
 
-        {tab === 'roster' && (
-          <div className="space-y-3">
-            {canWrite(role) && (
-              <div>
-                {!showAddPlayer ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => setShowAddPlayer(true)}
-                  >
-                    Add Player
-                  </button>
-                ) : (
-                  <form onSubmit={addPlayer} className="card bg-base-100 shadow p-4 space-y-3">
-                    <h3 className="font-semibold text-sm">New Player</h3>
-                    {rosterAddError && (
-                      <div className="alert alert-error text-xs py-2">{rosterAddError}</div>
-                    )}
-                    <div className="flex gap-2">
-                      <div className="form-control flex-1">
-                        <label className="label py-0" htmlFor="add-name">
-                          <span className="label-text text-xs">Display name *</span>
-                        </label>
-                        <input
-                          id="add-name"
-                          type="text"
-                          className="input input-bordered input-sm"
-                          required
-                          maxLength={100}
-                          value={addDisplayName}
-                          onChange={(e) => setAddDisplayName(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-control w-24">
-                        <label className="label py-0" htmlFor="add-jersey">
-                          <span className="label-text text-xs">Jersey #</span>
-                        </label>
-                        <input
-                          id="add-jersey"
-                          type="text"
-                          className="input input-bordered input-sm"
-                          maxLength={20}
-                          value={addJersey}
-                          onChange={(e) => setAddJersey(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-control flex-1">
-                        <label className="label py-0" htmlFor="add-position">
-                          <span className="label-text text-xs">Position</span>
-                        </label>
-                        <input
-                          id="add-position"
-                          type="text"
-                          className="input input-bordered input-sm"
-                          maxLength={50}
-                          value={addPosition}
-                          onChange={(e) => setAddPosition(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-control w-32">
-                        <label className="label py-0" htmlFor="add-status">
-                          <span className="label-text text-xs">Status</span>
-                        </label>
-                        <select
-                          id="add-status"
-                          className="select select-bordered select-sm"
-                          value={addStatus}
-                          onChange={(e) => setAddStatus(e.target.value as RosterEntryStatus)}
-                        >
-                          {(['ACTIVE', 'INJURED', 'INACTIVE'] as RosterEntryStatus[]).map((s) => (
-                            <option key={s} value={s}>
-                              {STATUS_LABEL[s]}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        className="btn btn-primary btn-sm"
-                        disabled={rosterAddSubmitting}
-                      >
-                        {rosterAddSubmitting ? 'Adding…' : 'Add'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => {
-                          setShowAddPlayer(false);
-                          setRosterAddError('');
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
-            <ul className="space-y-2">
-              {roster.map((e) => (
-                <li key={e.id} className="card bg-base-100 shadow p-3 space-y-2">
-                  {editEntryId === e.id ? (
-                    <div className="space-y-2">
-                      {rosterEditError && (
-                        <div className="alert alert-error text-xs py-2">{rosterEditError}</div>
-                      )}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          className="input input-bordered input-sm flex-1"
-                          aria-label="Display name"
-                          value={editDisplayName}
-                          onChange={(ev) => setEditDisplayName(ev.target.value)}
-                          maxLength={100}
-                        />
-                        <input
-                          type="text"
-                          className="input input-bordered input-sm w-20"
-                          aria-label="Jersey number"
-                          value={editJersey}
-                          onChange={(ev) => setEditJersey(ev.target.value)}
-                          maxLength={20}
-                          placeholder="Jersey #"
-                        />
-                        <input
-                          type="text"
-                          className="input input-bordered input-sm flex-1"
-                          aria-label="Position"
-                          value={editPosition}
-                          onChange={(ev) => setEditPosition(ev.target.value)}
-                          maxLength={50}
-                          placeholder="Position"
-                        />
-                        <select
-                          className="select select-bordered select-sm w-28"
-                          aria-label="Status"
-                          value={editStatus}
-                          onChange={(ev) => setEditStatus(ev.target.value as RosterEntryStatus)}
-                        >
-                          {(['ACTIVE', 'INJURED', 'INACTIVE'] as RosterEntryStatus[]).map((s) => (
-                            <option key={s} value={s}>
-                              {STATUS_LABEL[s]}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-xs"
-                          disabled={rosterEditSubmitting}
-                          onClick={() => saveEdit(e.id)}
-                        >
-                          {rosterEditSubmitting ? 'Saving…' : 'Save'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-xs"
-                          onClick={() => setEditEntryId(null)}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium">{e.displayName}</p>
-                        <p className="text-xs opacity-60">
-                          #{e.jerseyNumber ?? '—'} · {e.position ?? 'No position'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`badge badge-sm ${
-                            e.status === 'ACTIVE'
-                              ? 'badge-success'
-                              : e.status === 'INJURED'
-                                ? 'badge-warning'
-                                : 'badge-ghost'
-                          }`}
-                        >
-                          {STATUS_LABEL[e.status]}
-                        </span>
-                        {canWrite(role) && (
-                          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                            <button
-                              type="button"
-                              className="btn btn-xs btn-outline"
-                              onClick={() => openEdit(e)}
-                            >
-                              Edit
-                            </button>
-                            {linkedParents[e.id] ? (
-                              <span className="text-xs opacity-60">
-                                Parent: {linkedParents[e.id]}
-                              </span>
-                            ) : linkParentEntryId === e.id ? (
-                              <div className="flex items-center gap-1">
-                                {linkError && (
-                                  <span className="text-xs text-error">{linkError}</span>
-                                )}
-                                {parentMembers.length === 0 ? (
-                                  <span className="text-xs opacity-60">No PARENT members</span>
-                                ) : (
-                                  <select
-                                    className="select select-bordered select-xs"
-                                    value={linkParentUserId}
-                                    aria-label="Select parent"
-                                    onChange={(ev) => setLinkParentUserId(ev.target.value)}
-                                  >
-                                    {parentMembers.map((m) => (
-                                      <option key={m.userId} value={m.userId}>
-                                        {m.displayName ?? m.userId.slice(0, 8)}
-                                      </option>
-                                    ))}
-                                  </select>
-                                )}
-                                <button
-                                  type="button"
-                                  className="btn btn-xs btn-primary"
-                                  disabled={linkSubmitting || parentMembers.length === 0}
-                                  onClick={() => submitLinkParent(e.id)}
-                                >
-                                  {linkSubmitting ? '…' : 'Link'}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-xs btn-ghost"
-                                  onClick={() => setLinkParentEntryId(null)}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                className="btn btn-xs btn-secondary"
-                                onClick={() => openLinkParent(e.id)}
-                              >
-                                Link Parent
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
-              {roster.length === 0 && !showAddPlayer && (
-                <li className="text-sm opacity-60 text-center py-8">
-                  No roster entries yet.{canWrite(role) ? ' Click "Add Player" to start.' : ''}
-                </li>
-              )}
-            </ul>
-          </div>
-        )}
-
-        {tab === 'invites' && (
-          <div className="space-y-3">
-            {canWrite(role) && (
-              <div className="space-y-2">
-                {justCreatedToken && (
-                  <div className="alert alert-success flex flex-col items-start gap-2">
-                    <p className="text-sm font-semibold">Invite created — copy token now:</p>
-                    <code className="bg-base-200 rounded px-2 py-1 text-sm break-all select-all">
-                      {justCreatedToken}
-                    </code>
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-ghost"
-                      onClick={() => setJustCreatedToken(null)}
-                    >
-                      Dismiss
-                    </button>
+      {tab === 'seasons' && (
+        <div className="space-y-2">
+          {canWrite(role) && (
+            <div>
+              {!showCreateSeason ? (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowCreateSeason(true)}
+                >
+                  Create Season
+                </button>
+              ) : (
+                <form onSubmit={createSeason} className="card bg-base-100 shadow p-4 space-y-3">
+                  <h3 className="font-semibold text-sm">New Season</h3>
+                  <div className="form-control">
+                    <label className="label py-0" htmlFor="season-name">
+                      <span className="label-text text-xs">Name</span>
+                    </label>
+                    <input
+                      id="season-name"
+                      type="text"
+                      className="input input-bordered input-sm"
+                      required
+                      value={newSeasonName}
+                      onChange={(e) => setNewSeasonName(e.target.value)}
+                    />
                   </div>
-                )}
-                {inviteCreateError && (
-                  <div className="alert alert-error text-sm">{inviteCreateError}</div>
-                )}
-                {!showCreateInvite ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => setShowCreateInvite(true)}
-                  >
-                    Create Invite
-                  </button>
-                ) : (
-                  <form
-                    onSubmit={createInvite}
-                    className="card bg-base-100 shadow p-4 flex gap-3 items-end"
-                  >
-                    <div className="form-control">
-                      <label className="label py-0" htmlFor="invite-role">
-                        <span className="label-text text-xs">Role</span>
+                  <div className="flex gap-2">
+                    <div className="form-control flex-1">
+                      <label className="label py-0" htmlFor="season-start">
+                        <span className="label-text text-xs">Start date</span>
                       </label>
-                      <select
-                        id="invite-role"
-                        className="select select-bordered select-sm"
-                        value={newInviteRole}
-                        onChange={(e) => setNewInviteRole(e.target.value as MemberRole)}
-                      >
-                        {INVITE_ROLES.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
+                      <input
+                        id="season-start"
+                        type="date"
+                        className="input input-bordered input-sm"
+                        required
+                        value={newSeasonStart}
+                        onChange={(e) => setNewSeasonStart(e.target.value)}
+                      />
                     </div>
+                    <div className="form-control flex-1">
+                      <label className="label py-0" htmlFor="season-end">
+                        <span className="label-text text-xs">End date</span>
+                      </label>
+                      <input
+                        id="season-end"
+                        type="date"
+                        className="input input-bordered input-sm"
+                        required
+                        value={newSeasonEnd}
+                        onChange={(e) => setNewSeasonEnd(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  {seasonFormError && (
+                    <div className="alert alert-error text-xs py-2">{seasonFormError}</div>
+                  )}
+                  <div className="flex gap-2">
                     <button
                       type="submit"
                       className="btn btn-primary btn-sm"
-                      disabled={inviteSubmitting}
+                      disabled={seasonSubmitting}
                     >
-                      {inviteSubmitting ? 'Generating…' : 'Generate'}
+                      {seasonSubmitting ? 'Creating…' : 'Create'}
                     </button>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
                       onClick={() => {
-                        setShowCreateInvite(false);
-                        setInviteCreateError('');
+                        setShowCreateSeason(false);
+                        setSeasonFormError('');
                       }}
                     >
                       Cancel
                     </button>
-                  </form>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+          {seasons.map((s) => (
+            <div
+              key={s.id}
+              className="card bg-base-100 shadow p-3 flex flex-row items-center justify-between"
+            >
+              <div>
+                <p className="font-medium">{s.name}</p>
+                <p className="text-xs opacity-60">
+                  {s.startDate} – {s.endDate}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`badge ${s.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'}`}
+                >
+                  {s.status}
+                </span>
+                {s.status === 'ACTIVE' && canWrite(role) && (
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-warning"
+                    onClick={() => archiveSeason(s.id)}
+                  >
+                    Archive
+                  </button>
                 )}
               </div>
-            )}
-            <ul className="space-y-2">
-              {invites.map((i) => (
-                <li
-                  key={i.id}
-                  className="card bg-base-100 shadow p-3 flex flex-row items-center justify-between"
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'roster' && (
+        <div className="space-y-3">
+          {canWrite(role) && (
+            <div>
+              {!showAddPlayer ? (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowAddPlayer(true)}
                 >
-                  <div>
-                    <p className="text-sm font-mono break-all text-xs opacity-60">
-                      {i.token || '(token hidden — copy at creation time)'}
-                    </p>
-                    <p className="text-xs opacity-60">
-                      Role: {ROLE_LABEL[i.role] ?? i.role} · Status: {i.status}
-                    </p>
+                  Add Player
+                </button>
+              ) : (
+                <form onSubmit={addPlayer} className="card bg-base-100 shadow p-4 space-y-3">
+                  <h3 className="font-semibold text-sm">New Player</h3>
+                  {rosterAddError && (
+                    <div className="alert alert-error text-xs py-2">{rosterAddError}</div>
+                  )}
+                  <div className="flex gap-2">
+                    <div className="form-control flex-1">
+                      <label className="label py-0" htmlFor="add-name">
+                        <span className="label-text text-xs">Display name *</span>
+                      </label>
+                      <input
+                        id="add-name"
+                        type="text"
+                        className="input input-bordered input-sm"
+                        required
+                        maxLength={100}
+                        value={addDisplayName}
+                        onChange={(e) => setAddDisplayName(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-control w-24">
+                      <label className="label py-0" htmlFor="add-jersey">
+                        <span className="label-text text-xs">Jersey #</span>
+                      </label>
+                      <input
+                        id="add-jersey"
+                        type="text"
+                        className="input input-bordered input-sm"
+                        maxLength={20}
+                        value={addJersey}
+                        onChange={(e) => setAddJersey(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-control flex-1">
+                      <label className="label py-0" htmlFor="add-position">
+                        <span className="label-text text-xs">Position</span>
+                      </label>
+                      <input
+                        id="add-position"
+                        type="text"
+                        className="input input-bordered input-sm"
+                        maxLength={50}
+                        value={addPosition}
+                        onChange={(e) => setAddPosition(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-control w-32">
+                      <label className="label py-0" htmlFor="add-status">
+                        <span className="label-text text-xs">Status</span>
+                      </label>
+                      <select
+                        id="add-status"
+                        className="select select-bordered select-sm"
+                        value={addStatus}
+                        onChange={(e) => setAddStatus(e.target.value as RosterEntryStatus)}
+                      >
+                        {(['ACTIVE', 'INJURED', 'INACTIVE'] as RosterEntryStatus[]).map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_LABEL[s]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  {i.status === 'PENDING' && canWrite(role) && (
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-sm"
+                      disabled={rosterAddSubmitting}
+                    >
+                      {rosterAddSubmitting ? 'Adding…' : 'Add'}
+                    </button>
                     <button
                       type="button"
-                      className="btn btn-xs btn-error"
-                      onClick={() => revokeInvite(i.id)}
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        setShowAddPlayer(false);
+                        setRosterAddError('');
+                      }}
                     >
-                      Revoke
+                      Cancel
                     </button>
-                  )}
-                </li>
-              ))}
-              {invites.length === 0 && !showCreateInvite && (
-                <li className="text-sm opacity-60 text-center py-8">
-                  No invites yet.{canWrite(role) ? ' Click "Create Invite" to generate one.' : ''}
-                </li>
+                  </div>
+                </form>
               )}
-            </ul>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+          <ul className="space-y-2">
+            {roster.map((e) => (
+              <li key={e.id} className="card bg-base-100 shadow p-3 space-y-2">
+                {editEntryId === e.id ? (
+                  <div className="space-y-2">
+                    {rosterEditError && (
+                      <div className="alert alert-error text-xs py-2">{rosterEditError}</div>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        className="input input-bordered input-sm flex-1"
+                        aria-label="Display name"
+                        value={editDisplayName}
+                        onChange={(ev) => setEditDisplayName(ev.target.value)}
+                        maxLength={100}
+                      />
+                      <input
+                        type="text"
+                        className="input input-bordered input-sm w-20"
+                        aria-label="Jersey number"
+                        value={editJersey}
+                        onChange={(ev) => setEditJersey(ev.target.value)}
+                        maxLength={20}
+                        placeholder="Jersey #"
+                      />
+                      <input
+                        type="text"
+                        className="input input-bordered input-sm flex-1"
+                        aria-label="Position"
+                        value={editPosition}
+                        onChange={(ev) => setEditPosition(ev.target.value)}
+                        maxLength={50}
+                        placeholder="Position"
+                      />
+                      <select
+                        className="select select-bordered select-sm w-28"
+                        aria-label="Status"
+                        value={editStatus}
+                        onChange={(ev) => setEditStatus(ev.target.value as RosterEntryStatus)}
+                      >
+                        {(['ACTIVE', 'INJURED', 'INACTIVE'] as RosterEntryStatus[]).map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_LABEL[s]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-xs"
+                        disabled={rosterEditSubmitting}
+                        onClick={() => saveEdit(e.id)}
+                      >
+                        {rosterEditSubmitting ? 'Saving…' : 'Save'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => setEditEntryId(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium">{e.displayName}</p>
+                      <p className="text-xs opacity-60">
+                        #{e.jerseyNumber ?? '—'} · {e.position ?? 'No position'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`badge badge-sm ${
+                          e.status === 'ACTIVE'
+                            ? 'badge-success'
+                            : e.status === 'INJURED'
+                              ? 'badge-warning'
+                              : 'badge-ghost'
+                        }`}
+                      >
+                        {STATUS_LABEL[e.status]}
+                      </span>
+                      {canWrite(role) && (
+                        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-outline"
+                            onClick={() => openEdit(e)}
+                          >
+                            Edit
+                          </button>
+                          {linkedParents[e.id] ? (
+                            <span className="text-xs opacity-60">
+                              Parent: {linkedParents[e.id]}
+                            </span>
+                          ) : linkParentEntryId === e.id ? (
+                            <div className="flex items-center gap-1">
+                              {linkError && <span className="text-xs text-error">{linkError}</span>}
+                              {parentMembers.length === 0 ? (
+                                <span className="text-xs opacity-60">No PARENT members</span>
+                              ) : (
+                                <select
+                                  className="select select-bordered select-xs"
+                                  value={linkParentUserId}
+                                  aria-label="Select parent"
+                                  onChange={(ev) => setLinkParentUserId(ev.target.value)}
+                                >
+                                  {parentMembers.map((m) => (
+                                    <option key={m.userId} value={m.userId}>
+                                      {m.displayName ?? m.userId.slice(0, 8)}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                              <button
+                                type="button"
+                                className="btn btn-xs btn-primary"
+                                disabled={linkSubmitting || parentMembers.length === 0}
+                                onClick={() => submitLinkParent(e.id)}
+                              >
+                                {linkSubmitting ? '…' : 'Link'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-xs btn-ghost"
+                                onClick={() => setLinkParentEntryId(null)}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-secondary"
+                              onClick={() => openLinkParent(e.id)}
+                            >
+                              Link Parent
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </li>
+            ))}
+            {roster.length === 0 && !showAddPlayer && (
+              <li className="text-sm opacity-60 text-center py-8">
+                No roster entries yet.{canWrite(role) ? ' Click "Add Player" to start.' : ''}
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {tab === 'invites' && (
+        <div className="space-y-3">
+          {canWrite(role) && (
+            <div className="space-y-2">
+              {justCreatedToken && (
+                <div className="alert alert-success flex flex-col items-start gap-2">
+                  <p className="text-sm font-semibold">Invite created — copy token now:</p>
+                  <code className="bg-base-200 rounded px-2 py-1 text-sm break-all select-all">
+                    {justCreatedToken}
+                  </code>
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost"
+                    onClick={() => setJustCreatedToken(null)}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+              {inviteCreateError && (
+                <div className="alert alert-error text-sm">{inviteCreateError}</div>
+              )}
+              {!showCreateInvite ? (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowCreateInvite(true)}
+                >
+                  Create Invite
+                </button>
+              ) : (
+                <form
+                  onSubmit={createInvite}
+                  className="card bg-base-100 shadow p-4 flex gap-3 items-end"
+                >
+                  <div className="form-control">
+                    <label className="label py-0" htmlFor="invite-role">
+                      <span className="label-text text-xs">Role</span>
+                    </label>
+                    <select
+                      id="invite-role"
+                      className="select select-bordered select-sm"
+                      value={newInviteRole}
+                      onChange={(e) => setNewInviteRole(e.target.value as MemberRole)}
+                    >
+                      {INVITE_ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    disabled={inviteSubmitting}
+                  >
+                    {inviteSubmitting ? 'Generating…' : 'Generate'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setShowCreateInvite(false);
+                      setInviteCreateError('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+          <ul className="space-y-2">
+            {invites.map((i) => (
+              <li
+                key={i.id}
+                className="card bg-base-100 shadow p-3 flex flex-row items-center justify-between"
+              >
+                <div>
+                  <p className="text-sm font-mono break-all text-xs opacity-60">
+                    {i.token || '(token hidden — copy at creation time)'}
+                  </p>
+                  <p className="text-xs opacity-60">
+                    Role: {ROLE_LABEL[i.role] ?? i.role} · Status: {i.status}
+                  </p>
+                </div>
+                {i.status === 'PENDING' && canWrite(role) && (
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-error"
+                    onClick={() => revokeInvite(i.id)}
+                  >
+                    Revoke
+                  </button>
+                )}
+              </li>
+            ))}
+            {invites.length === 0 && !showCreateInvite && (
+              <li className="text-sm opacity-60 text-center py-8">
+                No invites yet.{canWrite(role) ? ' Click "Create Invite" to generate one.' : ''}
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
