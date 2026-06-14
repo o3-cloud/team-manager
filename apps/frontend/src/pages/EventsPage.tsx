@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { canWrite, useTeamRole } from '../hooks/useTeamRole';
 import { api } from '../lib/api';
 
@@ -110,8 +110,10 @@ export default function EventsPage() {
   const past = events.filter((e) => new Date(e.startsAt) < now);
 
   function statusBadge(ev: TeamEvent) {
-    if (ev.status === 'CANCELLED') return <span className="badge badge-error badge-sm">Cancelled</span>;
-    if (new Date(ev.startsAt) < now) return <span className="badge badge-ghost badge-sm">Past</span>;
+    if (ev.status === 'CANCELLED')
+      return <span className="badge badge-error badge-sm">Cancelled</span>;
+    if (new Date(ev.startsAt) < now)
+      return <span className="badge badge-ghost badge-sm">Past</span>;
     return <span className="badge badge-success badge-sm">Upcoming</span>;
   }
 
@@ -124,7 +126,9 @@ export default function EventsPage() {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1">
-            <p className={`font-medium${ev.status === 'CANCELLED' ? ' line-through opacity-60' : ''}`}>
+            <p
+              className={`font-medium${ev.status === 'CANCELLED' ? ' line-through opacity-60' : ''}`}
+            >
               {ev.title}
             </p>
             <p className="text-xs opacity-60">
@@ -142,182 +146,175 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-200 p-6">
-      <div className="max-w-3xl mx-auto space-y-4">
-        <Link to={`/teams/${teamId}/dashboard`} className="btn btn-sm btn-ghost">
-          ← Back to dashboard
-        </Link>
-
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Events</h1>
-          {canWrite(role) && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => setShowForm((v) => !v)}
-            >
-              {showForm ? 'Cancel' : 'Create Event'}
-            </button>
-          )}
-        </div>
-
-        {/* Date-range filter */}
-        <div className="flex flex-wrap gap-2 items-end">
-          <div className="form-control">
-            <label className="label py-0" htmlFor="filter-from">
-              <span className="label-text text-xs">From</span>
-            </label>
-            <input
-              id="filter-from"
-              type="date"
-              className="input input-bordered input-sm"
-              value={filterFrom}
-              onChange={(e) => setFilterFrom(e.target.value)}
-            />
-          </div>
-          <div className="form-control">
-            <label className="label py-0" htmlFor="filter-to">
-              <span className="label-text text-xs">To</span>
-            </label>
-            <input
-              id="filter-to"
-              type="date"
-              className="input input-bordered input-sm"
-              value={filterTo}
-              onChange={(e) => setFilterTo(e.target.value)}
-            />
-          </div>
-          {(filterFrom !== today() || filterTo) && (
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                setFilterFrom(today());
-                setFilterTo('');
-              }}
-            >
-              Reset to today
-            </button>
-          )}
-        </div>
-        {filterError && <div className="alert alert-warning text-sm py-2">{filterError}</div>}
-
-        {error && <div className="alert alert-error text-sm">{error}</div>}
-
-        {showForm && canWrite(role) && (
-          <div className="card bg-base-100 shadow p-4">
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div className="form-control">
-                <label className="label" htmlFor="ev-title">
-                  <span className="label-text">Title</span>
-                </label>
-                <input
-                  id="ev-title"
-                  type="text"
-                  className="input input-bordered"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label" htmlFor="ev-type">
-                  <span className="label-text">Type</span>
-                </label>
-                <select
-                  id="ev-type"
-                  className="select select-bordered"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as EventType)}
-                >
-                  <option value="GAME">Game</option>
-                  <option value="PRACTICE">Practice</option>
-                  <option value="MEETING">Meeting</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-
-              <div className="form-control">
-                <label className="label" htmlFor="ev-starts">
-                  <span className="label-text">Starts at</span>
-                </label>
-                <input
-                  id="ev-starts"
-                  type="datetime-local"
-                  className="input input-bordered"
-                  required
-                  value={startsAtLocal}
-                  onChange={(e) => setStartsAtLocal(e.target.value)}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label" htmlFor="ev-location">
-                  <span className="label-text">Location (optional)</span>
-                </label>
-                <input
-                  id="ev-location"
-                  type="text"
-                  className="input input-bordered"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label" htmlFor="ev-notes">
-                  <span className="label-text">Notes (optional)</span>
-                </label>
-                <textarea
-                  id="ev-notes"
-                  className="textarea textarea-bordered"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Creating…' : 'Create Event'}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Upcoming events */}
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide opacity-50">
-            Upcoming ({upcoming.length})
-          </h2>
-          {upcoming.length === 0 ? (
-            <p className="text-sm opacity-60 text-center py-6">No upcoming events.</p>
-          ) : (
-            <ul className="space-y-2">
-              {upcoming.map((ev) => (
-                <li key={ev.id}>
-                  <EventCard ev={ev} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* Past events (only shown when filter includes past dates) */}
-        {past.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide opacity-50">
-              Past ({past.length})
-            </h2>
-            <ul className="space-y-2">
-              {past.map((ev) => (
-                <li key={ev.id}>
-                  <EventCard ev={ev} />
-                </li>
-              ))}
-            </ul>
-          </section>
+    <div className="max-w-3xl mx-auto space-y-4">
+      <div className="flex items-center justify-end">
+        {canWrite(role) && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => setShowForm((v) => !v)}
+          >
+            {showForm ? 'Cancel' : 'Create Event'}
+          </button>
         )}
       </div>
+
+      {/* Date-range filter */}
+      <div className="flex flex-wrap gap-2 items-end">
+        <div className="form-control">
+          <label className="label py-0" htmlFor="filter-from">
+            <span className="label-text text-xs">From</span>
+          </label>
+          <input
+            id="filter-from"
+            type="date"
+            className="input input-bordered input-sm"
+            value={filterFrom}
+            onChange={(e) => setFilterFrom(e.target.value)}
+          />
+        </div>
+        <div className="form-control">
+          <label className="label py-0" htmlFor="filter-to">
+            <span className="label-text text-xs">To</span>
+          </label>
+          <input
+            id="filter-to"
+            type="date"
+            className="input input-bordered input-sm"
+            value={filterTo}
+            onChange={(e) => setFilterTo(e.target.value)}
+          />
+        </div>
+        {(filterFrom !== today() || filterTo) && (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              setFilterFrom(today());
+              setFilterTo('');
+            }}
+          >
+            Reset to today
+          </button>
+        )}
+      </div>
+      {filterError && <div className="alert alert-warning text-sm py-2">{filterError}</div>}
+
+      {error && <div className="alert alert-error text-sm">{error}</div>}
+
+      {showForm && canWrite(role) && (
+        <div className="card bg-base-100 shadow p-4">
+          <form onSubmit={handleCreate} className="space-y-3">
+            <div className="form-control">
+              <label className="label" htmlFor="ev-title">
+                <span className="label-text">Title</span>
+              </label>
+              <input
+                id="ev-title"
+                type="text"
+                className="input input-bordered"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label" htmlFor="ev-type">
+                <span className="label-text">Type</span>
+              </label>
+              <select
+                id="ev-type"
+                className="select select-bordered"
+                value={type}
+                onChange={(e) => setType(e.target.value as EventType)}
+              >
+                <option value="GAME">Game</option>
+                <option value="PRACTICE">Practice</option>
+                <option value="MEETING">Meeting</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+
+            <div className="form-control">
+              <label className="label" htmlFor="ev-starts">
+                <span className="label-text">Starts at</span>
+              </label>
+              <input
+                id="ev-starts"
+                type="datetime-local"
+                className="input input-bordered"
+                required
+                value={startsAtLocal}
+                onChange={(e) => setStartsAtLocal(e.target.value)}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label" htmlFor="ev-location">
+                <span className="label-text">Location (optional)</span>
+              </label>
+              <input
+                id="ev-location"
+                type="text"
+                className="input input-bordered"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label" htmlFor="ev-notes">
+                <span className="label-text">Notes (optional)</span>
+              </label>
+              <textarea
+                id="ev-notes"
+                className="textarea textarea-bordered"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Creating…' : 'Create Event'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Upcoming events */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide opacity-50">
+          Upcoming ({upcoming.length})
+        </h2>
+        {upcoming.length === 0 ? (
+          <p className="text-sm opacity-60 text-center py-6">No upcoming events.</p>
+        ) : (
+          <ul className="space-y-2">
+            {upcoming.map((ev) => (
+              <li key={ev.id}>
+                <EventCard ev={ev} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Past events (only shown when filter includes past dates) */}
+      {past.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide opacity-50">
+            Past ({past.length})
+          </h2>
+          <ul className="space-y-2">
+            {past.map((ev) => (
+              <li key={ev.id}>
+                <EventCard ev={ev} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
