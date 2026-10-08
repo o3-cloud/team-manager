@@ -43,7 +43,7 @@ import { UserEntity } from '../users/entities/user.entity';
         ],
         synchronize: false,
         migrationsRun: true,
-        migrations: [__dirname + '/../migrations/*.{ts,js}'],
+        migrations: [`${__dirname}/../migrations/*.{ts,js}`],
         logging: config.get('NODE_ENV') === 'development',
       }),
     }),

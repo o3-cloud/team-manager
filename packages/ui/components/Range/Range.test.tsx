@@ -62,7 +62,7 @@ describe("Range", () => {
   it("calls onChange when value changes", () => {
     const onChange = vi.fn(() => undefined);
     render(<Range onChange={onChange} />);
-    fireEvent.change(screen.getByRole("slider"), { target: { value: "50" } });
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "51" } });
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 });

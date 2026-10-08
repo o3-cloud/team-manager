@@ -29,8 +29,7 @@ export class AnnouncementsService {
   constructor(
     @InjectRepository(AnnouncementEntity)
     private readonly announcementRepo: Repository<AnnouncementEntity>,
-    @InjectRepository(MembershipEntity)
-    private readonly membershipRepo: Repository<MembershipEntity>,
+    @InjectRepository(MembershipEntity) readonly _membershipRepo: Repository<MembershipEntity>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 

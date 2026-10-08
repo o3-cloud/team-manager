@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TeamRole } from '../common/enums/team-role.enum';
 import { MembershipEntity } from '../memberships/entities/membership.entity';
-import { AnnouncementPostedEvent, AnnouncementsService } from './announcements.service';
+import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { AnnouncementAudience, AnnouncementEntity } from './entities/announcement.entity';
 
