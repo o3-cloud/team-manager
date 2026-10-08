@@ -31,46 +31,30 @@ The run slug in `$ARGUMENTS`, else the most recent run awaiting this gate. Read
 
 1. **Measure the outcome** against the success metrics in the Requirements Brief —
    observed results vs. intended.
-2. **Capture decision divergence** from `resolutions.md`. Count the resolutions
-   whose `Source` was `evidence-overrides-default` or a user answer that wasn't
-   the recommended option, and report the ratio (`<diverged> / <total>`). High
-   divergence is a signal that the upstream artifacts' stated defaults are
+2. **Capture decision divergence.** Read `resolutions.md` if it exists. Count the
+   resolutions whose `Source` was `evidence-overrides-default` or a user answer that
+   wasn't the recommended option, and report the ratio (`<diverged> / <total>`).
+   High divergence is a signal that the upstream artifacts' stated defaults are
    miscalibrated — fold that signal into the framework updates step 4.
+
+   If the run's autonomy level is 5 and `resolutions.md` does **not** exist, create
+   a decision log by applying the `level-5-decision-log.md` template. Record the
+   key agent-made decisions, near-misses, and any contract deviations. Use this log
+   to report divergence as `<diverged>/<total>` or state explicitly when no
+   divergent decisions occurred.
 3. Capture **what went well** and **what did not**.
 4. Log **defects discovered** (severity, root cause, owner, resolution) and **technical
    debt** taken on (shortcuts, deferred cleanup, test/doc gaps).
 5. **Fold lessons back into the framework** — the core of this gate. Concretely update:
-   - `.claude/sdlc/` — new patterns, constraints, domain rules, edge cases. This is the project override layer; gate skills prefer these files over the base packs.
-   - `.claude/skills/sdlc-knowledge/reference/autonomy/escalation-policy.md` — new triggers learned from a near-miss.
-   - the risk model / `.claude/skills/sdlc-knowledge/reference/quality-gates/` — gates that should be tighter or lighter.
-   - `.claude/skills/sdlc-knowledge/reference/agent/change-classes.md` — a class boundary that proved wrong.
+   - call `/sdlc-knowledge context-packs` to locate context pack files — update with new patterns, constraints, domain rules, edge cases.
+   - call `/sdlc-knowledge autonomy/escalation-policy.md` to locate the escalation policy — update with new triggers learned from a near-miss.
+   - call `/sdlc-knowledge quality-gates` to locate gate specs — update gates that should be tighter or lighter.
+   - call `/sdlc-knowledge agent/change-classes.md` to locate the change-class taxonomy — update a class boundary that proved wrong.
    - **default calibration** — if step 2's divergence ratio is high (>~30%),
      propose specific changes to the stated defaults in the upstream gate skills.
    Make the edits, or list them precisely if the framework files are read-only here.
 6. Create the **follow-up backlog**.
-7. Write `09-post-implementation-review.md`, set the `state.md` run status to
-   `complete`, update the gate-9 ledger row, emit the result.
-
-## Gate checklist
-
-- [ ] Outcome measured against success metrics
-- [ ] Decision divergence ratio computed from `resolutions.md`
-- [ ] Defects and technical debt logged
-- [ ] Context packs, escalation rules, risk policy, and gates updated
-- [ ] Default calibration proposed when divergence ratio is high
-- [ ] Follow-up backlog created
-
-## Artifact structure
-
-`# Post-Implementation Review` with: Outcome vs. success metrics; **Decision
-divergence** (`<diverged> / <total>` resolutions, with per-question annotations);
-What went well; What did not go well; Defects discovered (table); Technical
-debt captured; Learning-loop updates (the specific framework edits made);
-Follow-up backlog.
-
-## Escalation
-
-None — this gate has no escalation trigger. It closes the loop.
+7. Write `09-post-implementation-review.md` (sections: outcome vs. success metrics; decision divergence — `<diverged>/<total>` resolutions with per-question annotations; what went well; what did not go well; defects discovered table; technical debt captured; learning-loop updates — specific framework edits made; follow-up backlog). Set `state.md` run status to `complete`, update gate-9 ledger row, and emit the result.
 
 ## Output Format — append this block
 
@@ -85,3 +69,5 @@ followups: <count>
 artifact: .sdlc/runs/<slug>/09-post-implementation-review.md
 note: <one line>
 ```
+
+After appending the result block, **mark the run complete** in `state.md` (set `Status: complete`). There is no next gate — the SDLC run is finished. Summarize any follow-up items or framework-update proposals for the human.

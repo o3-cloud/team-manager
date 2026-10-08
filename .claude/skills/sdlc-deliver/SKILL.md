@@ -106,13 +106,13 @@ L→`7-release`, P→`8-validation`, G→`9-learning`):
 - The prime directive: never skip from intent to code. Every gate produces its artifact
   before the next begins; never claim a gate passed without its artifact on disk.
 - The human's stated Authority overrides the change class's default level in either
-  direction — the human operator may raise or lower the level as they see fit.
+  direction — the human operator may raise or lower the level as they see fit. The class
+  default is a recommendation, not a ceiling.
 - Keep your own context lean: delegate heavy gates to subagents and rely on `state.md`
   and the numbered artifacts as the shared memory between gates.
 - Record every escalation, approval, and autonomous completion in `state.md` so higher
   autonomy stays auditable.
-- Reference framework detail by path relative to the repo root: `.claude/skills/sdlc-knowledge/reference/agent/operating-manual.md`,
-  `.claude/skills/sdlc-knowledge/reference/quality-gates/quality-gates.md`, `.claude/skills/sdlc-knowledge/reference/agent/change-classes.md`, `.claude/skills/sdlc-knowledge/reference/autonomy/`.
+- Reference framework detail by calling `/sdlc-knowledge` with queries: `agent/operating-manual.md`, `quality-gates/quality-gates.md`, `agent/change-classes.md`, or `autonomy` for autonomy policies.
 
 ## Output Format
 

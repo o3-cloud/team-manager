@@ -60,9 +60,11 @@ export default function EventsPage() {
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [hasActiveSeason, setHasActiveSeason] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!teamId) return;
+    api.get<Array<{ status: string }>>(`/teams/${teamId}/seasons`).then((seasons) => setHasActiveSeason(seasons.some((season) => season.status === 'ACTIVE'))).catch(() => setHasActiveSeason(null));
     if (filterFrom && filterTo && filterFrom > filterTo) {
       setFilterError('"From" date must be on or before "To" date');
       return;
@@ -81,6 +83,8 @@ export default function EventsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!teamId) return;
+    if (hasActiveSeason === false) { setError('Create an active season before adding events.'); return; }
+    if (submitting) return;
     setSubmitting(true);
     setError('');
     try {
@@ -200,7 +204,9 @@ export default function EventsPage() {
       </div>
       {filterError && <div className="alert alert-warning text-sm py-2">{filterError}</div>}
 
-      {error && <div className="alert alert-error text-sm">{error}</div>}
+      {error && <div role="alert" className="alert alert-error text-sm">{error}</div>}
+
+      {showForm && hasActiveSeason === false && <div role="alert" className="alert alert-warning text-sm">Create an active season before adding events. <a className="link link-primary" href={`/teams/${teamId}/detail`}>Manage seasons</a></div>}
 
       {showForm && canWrite(role) && (
         <div className="card bg-base-100 shadow p-4">
@@ -275,7 +281,7 @@ export default function EventsPage() {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
+            <button type="submit" className="btn btn-primary" disabled={submitting || hasActiveSeason === false}>
               {submitting ? 'Creating…' : 'Create Event'}
             </button>
           </form>

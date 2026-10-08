@@ -1,7 +1,7 @@
 ---
 name: sdlc:7-release
-description: Run the AI-SDLC Release gate — produce a Release & Rollback Plan and the PR package so the change can ship safely. Trigger when the user asks to plan a release, write a rollout or rollback plan, plan a migration sequence, or prepare a change for deployment.
-when_to_use: Use as quality gate 7 of the AI-SDLC lifecycle, after Security and before Production Validation. Produces the Release & Rollback Plan. It plans deployment; it does not deploy — production deployment is a blocked action requiring explicit human approval.
+description: Run the AI-SDLC Release gate — review the project, start the service(s) locally using the project's defined method, and verify they are healthy. Produces a release note documenting the local verification result.
+when_to_use: Use as quality gate 7 of the AI-SDLC lifecycle, after Security and before Production Validation. Verifies the service(s) build and run correctly in the local environment before proceeding to production validation.
 argument-hint: "[run-slug]"
 disable-model-invocation: false
 user-invocable: true
@@ -14,75 +14,90 @@ allowed-tools:
   - Bash
 ---
 
-# AI-SDLC Gate 7 — Release
+# AI-SDLC Gate 7 — Release (Local Verification)
 
-**Artifact:** Release & Rollback Plan → `07-release-plan.md`
-**Gate question:** Can we ship safely?
+**Artifact:** Release Verification Note → `07-release-verification.md`
+**Gate question:** Do the service(s) build and run correctly locally?
 
 ## Inputs
 
 The run slug in `$ARGUMENTS`, else the most recent in-progress run. Read `contract.md`,
-`state.md`, and artifacts `01`–`06`. Load context packs 08 (operational readiness) and 09 (release governance): for each,
-prefer `.claude/sdlc/<NN>-<name>.md` (project override) if the file exists; otherwise
-fall back to `.claude/skills/sdlc-knowledge/reference/context-packs/<NN>-<name>.md`.
+`state.md`, and artifacts `01`–`06`.
+
+## Local run method discovery
+
+Discover how to run the service(s) locally by inspecting the project:
+
+1. Check for `docker-compose.yml` / `compose.yml` in the project root or `src/` — this is the preferred method.
+2. Check for a `Makefile` with targets like `up`, `run`, `start`, `dev`.
+3. Check `package.json` for `scripts.start`, `scripts.dev`, `scripts.up`.
+4. Check for `README.md` or `BUILD-PLAN.md` with local development instructions.
+5. Check for `Dockerfile`(s) that can be built and run individually.
+6. Check for `Procfile`, `docker-compose.yaml`, or other orchestration files.
+
+Use the most specific method found. If multiple services exist, run them all.
 
 ## Workflow
 
-0. **Pre-release quality re-run.** Before drafting the rollout plan, re-run the
-   project's quality gates and capture their status in the release artifact:
-   `typecheck`, `test`, `lint`, `audit`, `build`. **Scope lint to the published
-   surface** — derive the scope from `package.json` (`files`, `main`, or
-   workspace roots) rather than running repo-wide, so unrelated example apps or
-   docs trees do not mask real regressions. If repo-wide lint surfaces
-   pre-existing failures *outside* the published surface, report them as a
-   separate count ("pre-existing; out of release scope") rather than blocking
-   the gate.
+1. **Review the project structure.** Identify all service components (web app, API, database, search engine, etc.) and their interdependencies.
 
-1. **Rollout strategy** — deployment sequence, environments, phased rollout (env,
-   tenant, %, geography).
-2. **Feature flags** — flag names, on/off behavior, ramp plan, cleanup owner.
-3. **Migration sequencing** — expand → deploy → contract; the order of schema, data,
-   infra, and API changes.
-4. **Pre-deployment checks** — the explicit checklist to clear before deploying.
-5. **Deployment steps** — the ordered runbook.
-6. **Rollback plan** — defined *before* deployment: how to safely reverse or disable,
-   and what must NOT be done as an emergency rollback (e.g. do not drop columns).
-7. **Post-release validation** and **monitoring during rollout** — metrics, logs,
-   alerts to watch and the thresholds that trigger an abort.
-8. **Communication** — who needs to know before, during, and after.
-9. Write `07-release-plan.md`. Update the `state.md` ledger row.
-10. **Stop for approval.** Production deployment is a blocked action — do not deploy.
-    Report that the plan is ready and human approval + deployment are required before
-    `/sdlc:8-validation`.
+2. **Run quality checks.** Before starting services, run:
+   - `typecheck` (if applicable)
+   - `test` (unit/integration tests)
+   - `lint` (scoped to the service surface)
+   - `build` (if a build step is required)
 
-## Gate checklist
+   Report any failures. Pre-existing failures outside the service surface should be noted but do not block the gate.
 
-- [ ] Rollout strategy, feature flags, migration sequencing defined
-- [ ] Rollback plan defined *before* deployment
-- [ ] Pre-deployment checks listed
-- [ ] Observability in place to monitor the rollout
-- [ ] Communication plan defined
+3. **Skill-loader smoke check.** If this run deployed or modified Claude skills,
+   run the skill-loader smoke check (`bash scripts/check-skill-load.sh`) to confirm
+   every affected skill is present and has valid frontmatter in every active workspace.
+   Report any failures; do not proceed to service startup until the check passes.
 
-## Artifact structure
+4. **Start the service(s) locally.** Use the discovered method:
+   - `docker compose up -d` (preferred — starts all services)
+   - `make up` / `make run`
+   - `npm start` / `npm run dev`
+   - Direct `docker run` for individual containers
 
-`# Release & Rollback Plan` with: Rollout strategy; Feature flags; Migration
-sequencing; Pre-deployment checks; Deployment steps; Rollback plan; Post-release
-validation; Monitoring during rollout; Communication.
+   If the method requires environment variables or configuration files, check for `.env.example`, `.env`, or `config/` directories and set up as needed.
 
-## Escalation
+5. **Verify service(s) are healthy.** For each service:
+   - Check the process is running (`docker ps`, `ps aux`, `curl` health endpoint)
+   - Hit the health endpoint or main endpoint and confirm HTTP 2xx
+   - Check logs for errors (last 50 lines)
+   - For multi-service stacks, verify inter-service connectivity (e.g. API can reach the database)
 
-Production deployment **always** requires explicit human approval, at every autonomy
-level. This gate ends in a pause by design. See
-[../sdlc-deliver/control-model.md](../sdlc-deliver/control-model.md).
+6. **Document the verification.** Write `07-release-verification.md` with:
+   - Services discovered and their purposes
+   - Method used to run locally
+   - Quality check results (typecheck, test, lint, build)
+   - Startup steps taken
+   - Health check results for each service (endpoint, response, status)
+   - Any errors or warnings observed
+   - Overall verdict: all services running and healthy, or specific failures
+
+7. **Stop the service(s).** Unless the user has requested otherwise, stop the local services:
+   - `docker compose down`
+   - `make down`
+   - Kill background processes
+
+   Note: do not remove volumes with persistent data unless explicitly asked.
+
+8. Update the `state.md` ledger row with the artifact path.
+
+**If local startup fails** — escalate via `/sdlc:escalate` with the failure details.
 
 ## Output Format — append this block
 
 ```
 ### sdlc-result
 gate: 7-release
-status: passed-awaiting-deploy-approval
+status: passed | escalate
 risk-score: <2-10>
-blocked-action: production-deployment (requires human approval)
-artifact: .sdlc/runs/<slug>/07-release-plan.md
-note: <one line>
+hard-stop-triggers: <none | service-unhealthy | build-failure>
+artifact: .sdlc/runs/<slug>/07-release-verification.md
+note: <one-line summary of verification result>
 ```
+
+After appending the result block, **identify the next required pending gate** in `state.md` and tell the human the exact command to continue (e.g. `/sdlc:manager <slug> gates=8`).

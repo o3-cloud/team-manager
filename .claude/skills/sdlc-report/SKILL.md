@@ -45,6 +45,8 @@ If the slug cannot be resolved, list available runs from `.sdlc/runs/` and ask.
    - `state.md` — slug, intent, autonomy level, risk tolerance, risk formula, latest
      risk score, status, gate ledger (required, pass if gate ledger row exists).
    - `contract.md` — intent, acceptance criteria (Gherkin), authority.
+   - `research-report.md` (if present) — pre-gate research findings and sources.
+   - `research-questions.md` (if present) — pre-gate research questions.
    - `01-requirements-brief.md` — functional + non-functional requirements, scope, edge cases.
    - `02-design-note.md` — solution options, recommended design, architecture notes.
    - `03-risk-register.md` — risk table, impact/likelihood scores per gate.
@@ -62,6 +64,7 @@ If the slug cannot be resolved, list available runs from `.sdlc/runs/` and ask.
    report.
 
 3. **Extract structured data** from the artifacts:
+   - Pre-gate research metadata → `{ questions: count, sources: count, reportExists: bool, questionsExist: bool }`.
    - Gate ledger rows → pipeline visualization data (gate #, name, status, risk score,
      artifact link).
    - Risk scores per gate → chart series `[{gate, score}, ...]`.
@@ -111,6 +114,7 @@ all its source artifacts are missing):
 
 | Section | Source | Content |
 |---------|---------|---------|
+| **Pre-gate research** | `research-report.md`, `research-questions.md` | Collapsible `<details>` per research question; source count and top-line findings summary. Omitted if neither file exists. |
 | **Risk score chart** | Gates 1–9 | SVG/CSS bar chart showing risk score per gate with tolerance line |
 | **Bugs fixed** | Gates 1–4 | Card grid: severity-coded left border, ID, title, file tags, fix description |
 | **Test results** | Gate 5 | Animated progress bars per suite (backend unit, frontend unit, E2E) |
@@ -141,7 +145,7 @@ Follow these rules (derived from the canonical example):
 
 - Read every file that exists — do not invent data. If a field is genuinely absent from
   all artifacts, mark it as "—" in the report rather than guessing.
-- The JS data block at the top of `<script>` should define `const GATES`, `const BUGS`,
+- The JS data block at the top of `<script>` should define `const GATES`, `const RESEARCH`, `const BUGS`,
   `const RISK_SERIES`, `const TEST_SUITES`, `const SEC_FINDINGS`, `const ACS`,
   `const BACKLOG`, `const TIMELINE`, `const KPIS` — exactly as in the canonical example.
 - Parse artifact markdown files with regex and string matching, not by invoking external

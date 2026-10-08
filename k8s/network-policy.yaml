@@ -70,7 +70,7 @@ spec:
     - port: 53
       protocol: TCP
 ---
-# frontend ingress on port 80 (port-forward traffic bypasses NetworkPolicy via host network)
+# frontend ingress on the pod listening port 8080. The Service exposes this as port 80.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -83,7 +83,7 @@ spec:
   policyTypes: [Ingress]
   ingress:
   - ports:
-    - port: 80
+    - port: 8080
 ---
 # frontend egress: backend (nginx /api proxy), centralized OO (RUM proxy), DNS
 apiVersion: networking.k8s.io/v1

@@ -27,6 +27,7 @@ export default function AnnouncementsPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     api
@@ -38,6 +39,8 @@ export default function AnnouncementsPage() {
   async function handlePost(e: FormEvent) {
     e.preventDefault();
     setError('');
+    if (posting) return;
+    setPosting(true);
     setLoading(true);
     try {
       const created = await api.post<Announcement>(`/teams/${teamId}/announcements`, {
@@ -60,6 +63,7 @@ export default function AnnouncementsPage() {
       setError(err instanceof Error ? err.message : 'Failed to post announcement');
     } finally {
       setLoading(false);
+      setPosting(false);
     }
   }
 
@@ -130,7 +134,7 @@ export default function AnnouncementsPage() {
             </label>
           </div>
           {error && <div className="alert alert-error text-sm">{error}</div>}
-          <button type="submit" className="btn btn-primary" disabled={loading}>
+          <button type="submit" className="btn btn-primary" disabled={loading || posting}>
             {loading ? <span className="loading loading-spinner loading-sm" /> : 'Post'}
           </button>
         </form>
