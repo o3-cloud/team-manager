@@ -69,8 +69,8 @@ jobs:
           node-version: '26'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @team-manager/backend test -- --coverage
-      - run: pnpm --filter @team-manager/frontend test -- --coverage
+      - run: pnpm --filter @team-manager/backend test --coverage
+      - run: pnpm --filter @team-manager/frontend test --coverage
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         if: always()
         with:
